@@ -1,0 +1,15 @@
+.git
+.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+.env
+.npm-cache
+artifacts
+frontend/node_modules
+frontend/dist
+frontend/playwright-report
+frontend/test-results
+openspec

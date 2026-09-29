@@ -1,0 +1,88 @@
+:root {
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #16231f;
+  background:
+    radial-gradient(circle at top left, rgb(240 202 120 / 32%), transparent 34rem),
+    #f4f1e8;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  width: min(960px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 15vh 0 64px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #8a4d2f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+h1 {
+  max-width: 760px;
+  margin: 0;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: clamp(2.6rem, 7vw, 5.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.lead {
+  max-width: 650px;
+  margin: 28px 0;
+  color: #52635d;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.7;
+}
+
+.notice {
+  max-width: 680px;
+  margin: 30px 0;
+  padding: 18px 20px;
+  border-left: 4px solid #bf6c40;
+  background: rgb(255 255 255 / 55%);
+  line-height: 1.6;
+}
+
+.primary-link,
+.secondary-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.primary-link {
+  color: #fffdf8;
+  background: #173d31;
+}
+
+.secondary-link {
+  border: 1px solid #173d31;
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding-top: 12vh;
+  }
+}

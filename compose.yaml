@@ -1,0 +1,132 @@
+name: ops-strategy-agent
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ops_agent
+      POSTGRES_USER: ops_agent
+      POSTGRES_PASSWORD: ops_agent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ops_agent -d ops_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command:
+      - uvicorn
+      - ops_agent.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    environment: &backend_environment
+      OPS_AGENT_ENVIRONMENT: development
+      OPS_AGENT_DATABASE_URL: postgresql+asyncpg://ops_agent:ops_agent@postgres:5432/ops_agent
+      OPS_AGENT_REDIS_URL: redis://redis:6379/0
+      OPS_AGENT_SESSION_SECRET: ${OPS_AGENT_SESSION_SECRET:-development-only-change-me}
+      OPS_AGENT_MODEL_PROVIDER: ${OPS_AGENT_MODEL_PROVIDER:-openai-compatible}
+      OPS_AGENT_MODEL_NAME: ${OPS_AGENT_MODEL_NAME:-gpt-4.1-mini}
+      OPS_AGENT_MODEL_BASE_URL: ${OPS_AGENT_MODEL_BASE_URL:-https://api.openai.com/v1}
+      OPS_AGENT_MODEL_API_KEY: ${OPS_AGENT_MODEL_API_KEY:-}
+      OPS_AGENT_SEARCH_PROVIDER: ${OPS_AGENT_SEARCH_PROVIDER:-tavily}
+      OPS_AGENT_SEARCH_API_KEY: ${OPS_AGENT_SEARCH_API_KEY:-}
+      OPS_AGENT_ARTIFACT_STORAGE_PATH: /app/artifacts
+    ports:
+      - "8000:8000"
+    volumes:
+      - report_artifacts:/app/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    hostname: worker
+    command:
+      - celery
+      - -A
+      - ops_agent.worker:celery_app
+      - worker
+      - --loglevel=INFO
+      - --hostname=worker@%h
+    environment: *backend_environment
+    volumes:
+      - report_artifacts:/app/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A ops_agent.worker:celery_app inspect ping --destination worker@worker --timeout 5 | grep -q pong
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "4173:4173"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  report_artifacts:
