@@ -1,5 +1,6 @@
 """Golden scenarios and human-review rubric for operations report evaluation."""
 
+from ops_agent.evaluation.batch import GoldenBatchResult, evaluate_golden_batch
 from ops_agent.evaluation.golden import GoldenEvaluationResult, evaluate_golden_report
 from ops_agent.evaluation.loader import (
     load_default_golden_scenarios,
@@ -22,6 +23,7 @@ from ops_agent.evaluation.schema import (
 from ops_agent.evaluation.scoring import score_human_review
 
 __all__ = [
+    "GoldenBatchResult",
     "GoldenExpectedBlocker",
     "GoldenEvaluationResult",
     "GoldenScenario",
@@ -39,4 +41,5 @@ __all__ = [
     "load_human_review_submission_file",
     "score_human_review",
     "evaluate_golden_report",
+    "evaluate_golden_batch",
 ]

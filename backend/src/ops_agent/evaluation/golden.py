@@ -44,11 +44,14 @@ def evaluate_golden_report(
 
     if report.scene_classification.primary_scene is not scenario.scene:
         failures.append("scene_mismatch")
-    if (
-        scenario.baseline_status is FieldStatus.UNKNOWN
-        and report.brief.current_baseline.status is not FieldStatus.UNKNOWN
-    ):
-        failures.append("invented_baseline")
+    if not any(strategy.scene is scenario.scene for strategy in report.strategies):
+        failures.append("primary_scene_strategy_missing")
+    if report.brief.current_baseline.status is not scenario.baseline_status:
+        failures.append(
+            "invented_baseline"
+            if scenario.baseline_status is FieldStatus.UNKNOWN
+            else "confirmed_baseline_missing"
+        )
 
     quality = check_operations_report(report)
     failures.extend(f"quality:{issue.rule_code.value}" for issue in quality.issues)
@@ -57,9 +60,16 @@ def evaluate_golden_report(
     ):
         failures.append("evidence_bundle_mismatch")
 
+    if report.delivery_status is not scenario.expected_delivery_status:
+        failures.append(
+            {
+                ReportDeliveryStatus.FORMAL: "formal_report_not_delivered",
+                ReportDeliveryStatus.DIRECTIONAL_DRAFT: "draft_delivery_status_mismatch",
+                ReportDeliveryStatus.FAILURE_EXPLANATION: "failure_explanation_not_delivered",
+            }[scenario.expected_delivery_status]
+        )
+
     if scenario.expected_delivery_status is ReportDeliveryStatus.FORMAL:
-        if report.delivery_status is not ReportDeliveryStatus.FORMAL:
-            failures.append("formal_report_not_delivered")
         if coverage.status is not EvidenceCoverageStatus.SUFFICIENT:
             failures.append("formal_report_has_insufficient_evidence")
     else:
