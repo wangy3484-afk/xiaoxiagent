@@ -1,0 +1,58 @@
+schema_version: "1.0"
+scale_min: 1
+scale_max: 5
+overall_passing_score: 4.0
+blocking_policy:
+  - 任一维度出现交付阻断项时不得判定为正式报告
+  - 任一维度低于自身 passing_score 时必须记录返工节点和责任归属
+  - 证据质量、执行可行性或指标可衡量性得分为 1 时整体直接不通过
+dimensions:
+  - dimension: requirements_completeness
+    weight: 15
+    passing_score: 4
+    review_question: 报告是否准确覆盖用户目标、目标用户、业务阶段、周期、资源、基线和关键限制？
+    score_1_anchor: 核心目标或目标用户缺失，且报告用未经确认的推测替代用户输入。
+    score_3_anchor: 核心输入基本完整，但部分资源、周期或基线缺口没有充分披露影响。
+    score_5_anchor: 所有关键输入均可追溯，未知项显式保留，并说明其对结论和验证计划的影响。
+  - dimension: evidence_quality
+    weight: 20
+    passing_score: 4
+    review_question: 外部事实和数据是否由可访问证据支持，来源等级、时间和冲突是否披露？
+    score_1_anchor: 关键事实没有来源，或仅凭搜索摘要、企业宣传内容声称确定效果与因果关系。
+    score_3_anchor: 大部分事实有来源，但独立性、时效性、冲突或因果边界说明仍不充分。
+    score_5_anchor: 事实逐项可追溯，优先使用原始或高可信来源，并清楚处理冲突、缺口和证据边界。
+  - dimension: scene_fit
+    weight: 15
+    passing_score: 4
+    review_question: 案例机制是否结合当前目标、人群、阶段、渠道、资源和时间背景完成适配？
+    score_1_anchor: 直接复制头部案例，没有说明场景差异、适用前提或不可复制因素。
+    score_3_anchor: 已列出主要差异和调整方向，但关键执行条件或最小验证范围仍不清楚。
+    score_5_anchor: 每项核心策略都说明适用前提、差异、调整、影响路径和不可复制因素，并控制迁移范围。
+  - dimension: strategy_logic
+    weight: 15
+    passing_score: 4
+    review_question: 诊断、核心矛盾、策略机制和预期影响路径之间是否逻辑连贯且不过度推断？
+    score_1_anchor: 策略与诊断脱节，把相关性当因果，或从单一案例推导普遍结论。
+    score_3_anchor: 策略方向基本合理，但替代解释、取舍理由或影响路径仍不够完整。
+    score_5_anchor: 目标关系、行为路径、核心问题、策略机制和验证假设完整闭环，并明确替代解释。
+  - dimension: execution_feasibility
+    weight: 15
+    passing_score: 4
+    review_question: 行动计划是否包含完整闭环，并与团队、渠道、内容产能、预算和周期一致？
+    score_1_anchor: 核心行动缺少负责人、时间或验收方式，或执行范围明显超过确认资源。
+    score_3_anchor: 行动字段完整，但跨阶段依赖、资源取舍或异常情况下的降级动作仍不具体。
+    score_5_anchor: 每项行动字段完整、阶段清晰、依赖可执行，并明确资源优先级、取舍和降级方案。
+  - dimension: measurement
+    weight: 10
+    passing_score: 4
+    review_question: 结果、过程和风险指标能否验证策略，并具有口径、公式、来源、周期和判断规则？
+    score_1_anchor: 指标缺少口径或验证方法，或在无基线情况下给出确定的精确提升承诺。
+    score_3_anchor: 三类指标基本完整，但目标依据、样本方法或实验停止条件仍不够清晰。
+    score_5_anchor: 指标与策略一一对应，口径可复现，目标有依据，实验包含对照、周期、样本和停止条件。
+  - dimension: risk_coverage
+    weight: 10
+    passing_score: 4
+    review_question: 重大业务、体验、合规、资源和数据风险是否有触发条件、负责人、监控指标和缓解动作？
+    score_1_anchor: 已知重大风险未处理，或风险只有泛化描述而没有可观察触发条件与责任人。
+    score_3_anchor: 主要风险已覆盖，但部分触发阈值、监控指标或降级动作仍不够明确。
+    score_5_anchor: 关键风险全面覆盖，均有触发条件、监控指标、负责人、缓解动作和停止规则。

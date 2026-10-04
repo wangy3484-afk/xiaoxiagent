@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         env_prefix="OPS_AGENT_",
         case_sensitive=False,
+        env_ignore_empty=True,
         extra="ignore",
     )
 
@@ -24,6 +25,13 @@ class Settings(BaseSettings):
 
     database_url: SecretStr = SecretStr(
         "postgresql+asyncpg://ops_agent:ops_agent@localhost:5432/ops_agent"
+    )
+    checkpoint_database_url: SecretStr = SecretStr(
+        "postgresql://ops_agent:ops_agent@localhost:5432/ops_agent"
+    )
+    checkpoint_schema: str = Field(
+        default="langgraph_checkpoint",
+        pattern=r"^[a-z_][a-z0-9_]{0,62}$",
     )
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
 
@@ -36,11 +44,15 @@ class Settings(BaseSettings):
     model_provider: Literal["openai", "openai-compatible"] = "openai-compatible"
     model_name: str = "gpt-4.1-mini"
     model_base_url: HttpUrl = HttpUrl("https://api.openai.com/v1")
+    model_health_url: HttpUrl | None = Field(default=None, repr=False)
     model_api_key: SecretStr | None = None
     model_timeout_seconds: float = Field(default=90.0, gt=0, le=600)
-    model_max_retries: int = Field(default=2, ge=0, le=10)
+    model_max_retries: int = Field(default=2, ge=0, le=2)
+    model_input_cost_per_million_tokens: float = Field(default=0.0, ge=0)
+    model_output_cost_per_million_tokens: float = Field(default=0.0, ge=0)
 
     search_provider: Literal["tavily", "brave", "serpapi"] = "tavily"
+    search_base_url: HttpUrl = HttpUrl("https://api.tavily.com")
     search_api_key: SecretStr | None = None
     search_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
 
@@ -56,8 +68,16 @@ class Settings(BaseSettings):
     report_timeout_seconds: int = Field(default=900, ge=60, le=7_200)
 
     artifact_storage_path: Path = Path("artifacts")
+    report_brand_title: str | None = Field(default=None, max_length=120)
+    report_brand_header: str | None = Field(default=None, max_length=200)
+    report_brand_logo_path: Path | None = None
     report_retention_days: int = Field(default=180, ge=1, le=3_650)
     source_snapshot_retention_days: int = Field(default=30, ge=1, le=365)
+    job_event_retention_days: int = Field(default=90, ge=1, le=3_650)
+    temporary_artifact_retention_days: int = Field(default=7, ge=1, le=365)
+    monitor_interval_seconds: int = Field(default=15, ge=2, le=300)
+    monitor_failure_threshold: int = Field(default=2, ge=1, le=10)
+    monitor_queue_backlog_threshold: int = Field(default=20, ge=0, le=100_000)
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> Self:
@@ -65,8 +85,14 @@ class Settings(BaseSettings):
         if self.environment != "production":
             return self
 
-        if self.session_secret.get_secret_value() == "development-only-change-me":
-            raise ValueError("OPS_AGENT_SESSION_SECRET must be changed in production")
+        session_secret = self.session_secret.get_secret_value().strip()
+        if (
+            session_secret == "development-only-change-me"
+            or len(session_secret) < 32
+        ):
+            raise ValueError(
+                "OPS_AGENT_SESSION_SECRET must be at least 32 characters in production"
+            )
         if self.model_api_key is None or not self.model_api_key.get_secret_value().strip():
             raise ValueError("OPS_AGENT_MODEL_API_KEY is required in production")
         if self.search_api_key is None or not self.search_api_key.get_secret_value().strip():
@@ -80,9 +106,11 @@ class Settings(BaseSettings):
         data: dict[str, object] = self.model_dump(mode="json")
         for field_name in (
             "database_url",
+            "checkpoint_database_url",
             "redis_url",
             "session_secret",
             "model_api_key",
+            "model_health_url",
             "search_api_key",
         ):
             data[field_name] = "[REDACTED]"

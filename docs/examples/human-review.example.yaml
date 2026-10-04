@@ -1,0 +1,49 @@
+review_id: human-review-example-001
+scenario_id: golden-acquisition-01
+report_id: report-anonymous-001
+reviewer_role: 资深增长运营评审者
+reviewed_at: "2026-09-30T15:00:00+08:00"
+dimension_scores:
+  - dimension: requirements_completeness
+    score: 5
+    rationale: 目标用户、增长目标、周期、预算、渠道和基线均来自已确认简报，未知项没有被补造成事实。
+    report_locations:
+      - 运营简报
+      - 执行摘要
+  - dimension: evidence_quality
+    score: 4
+    rationale: 核心案例事实均能打开原始来源，报告明确区分实施动作与效果证据，并披露一项日期未知来源。
+    report_locations:
+      - 案例证据
+      - 证据附录
+  - dimension: scene_fit
+    score: 4
+    rationale: 策略明确比较门店流量、团队规模和渠道条件，并把大规模案例调整为两个片区的最小实验。
+    report_locations:
+      - 策略设计
+      - 适用条件
+  - dimension: strategy_logic
+    score: 4
+    rationale: 目标人群、价值主张、渠道角色、转化漏斗和影响路径完整，替代解释也进入实验验证。
+    report_locations:
+      - 问题诊断
+      - 策略设计
+  - dimension: execution_feasibility
+    score: 4
+    rationale: 行动按阶段列出负责人、资源、交付物、时间和验收方式，范围符合两名运营的确认产能。
+    report_locations:
+      - 行动计划
+      - 资源与预算
+  - dimension: measurement
+    score: 4
+    rationale: 结果、过程和风险指标口径完整，分渠道实验包含对照、观测周期、成功标准和停止条件。
+    report_locations:
+      - 目标与指标
+      - 实验方案
+  - dimension: risk_coverage
+    score: 4
+    rationale: 补贴套利、低质量注册、履约和投诉风险均包含触发条件、监控指标、负责人和缓解动作。
+    report_locations:
+      - 风险预案
+findings: []
+overall_comment: 报告达到正式交付门槛，建议在首轮实验结束后按相同口径补充实际结果并形成新版本。

@@ -1,0 +1,108 @@
+schema_version: "1.0"
+playbook_version: "1.0.0"
+scene: acquisition
+name: 拉新增长 Playbook
+description: 面向有效新客增长，分析目标人群、价值主张、渠道组合、触达路径、转化漏斗、获客成本假设和渠道验证。
+required_input_fields:
+  - operation_goal
+  - target_users
+  - current_problem
+  - existing_channels
+  - budget_and_resources
+recommended_input_fields:
+  - current_baseline
+  - business_stage
+  - execution_period
+  - constraints
+clarifying_questions:
+  - id: acquisition_qualified_user
+    field: target_users
+    prompt: 什么条件才算合格新客，首个有效行为是什么？
+    priority: critical
+    rationale: 只追求注册量会混入低质量用户并扭曲获客判断。
+  - id: acquisition_funnel
+    field: current_baseline
+    prompt: 从曝光、到达、注册到首个有效行为，各环节当前转化是多少？
+    priority: critical
+    rationale: 漏斗基线用于定位渠道、价值表达或承接环节的问题。
+  - id: acquisition_channel_cost
+    field: budget_and_resources
+    prompt: 各渠道可承受的单客成本、回收周期和试验预算是多少？
+    priority: high
+    rationale: 获客规模必须同时满足质量和单位经济约束。
+diagnostic_dimensions:
+  - id: acquisition_segment_value
+    name: 人群与价值主张匹配
+    focus_questions:
+      - 哪类用户的问题强度和支付或使用意愿最高？
+      - 当前价值主张是否对应其进入场景？
+    required_outputs:
+      - 优先人群和排除人群
+      - 人群痛点到价值主张的映射
+  - id: acquisition_channel_funnel
+    name: 渠道与转化漏斗
+    focus_questions:
+      - 渠道带来的用户质量和成本有何差异？
+      - 最大流失发生在哪个触达或承接环节？
+    required_outputs:
+      - 分渠道漏斗
+      - 获客成本假设与回收约束
+strategy_sections:
+  - id: acquisition_channel_portfolio
+    name: 渠道组合
+    purpose: 根据人群、意图、规模、成本和可控性分配探索与放大资源。
+    required_fields:
+      - target_segment
+      - value_proposition
+      - channel_role
+      - traffic_to_conversion_path
+      - cost_hypothesis
+    decision_rules:
+      - 不以单一渠道的低表面成本替代合格新客质量
+      - 每个新渠道先设置有停止条件的最小实验
+  - id: acquisition_conversion
+    name: 首次转化承接
+    purpose: 缩短用户从首次触达到完成首个有效行为的路径。
+    required_fields:
+      - entry_message
+      - landing_experience
+      - first_value_action
+      - friction_reduction
+      - follow_up_trigger
+    decision_rules:
+      - 优先解决最大漏斗损失而不是同时改造所有环节
+required_metrics:
+  - id: qualified_acquisition_rate
+    name: 合格新客率
+    metric_type: outcome
+    definition: 新增用户中在规定周期完成首个有效行为的比例。
+    formula: 完成首个有效行为的新用户数 / 新增用户数
+    decision_use: 区分渠道带量与真实有效增长。
+  - id: customer_acquisition_cost
+    name: 合格新客获客成本
+    metric_type: outcome
+    definition: 获得一名合格新客所消耗的可归因营销成本。
+    formula: 可归因获客成本 / 合格新客数
+    decision_use: 与回收周期和用户价值共同决定渠道是否放大。
+  - id: funnel_step_conversion
+    name: 关键漏斗转化率
+    metric_type: process
+    definition: 相邻关键步骤之间的用户转化比例。
+    formula: 完成下一步骤用户数 / 进入当前步骤用户数
+    decision_use: 定位渠道信息、落地承接或产品体验中的首要瓶颈。
+quality_rules:
+  - id: acquisition_quality_not_volume
+    severity: blocking
+    description: 拉新目标必须定义合格新客和首个有效行为，不能只写曝光或注册量。
+    check: 策略必须同时包含目标人群、合格条件和质量指标。
+    remediation: 补充合格用户口径并重新计算渠道优先级。
+  - id: acquisition_cost_assumption
+    severity: blocking
+    description: 未提供成本和价值基线时不得承诺确定获客成本或规模。
+    check: 成本目标必须有基线或标记为待验证假设并关联渠道实验。
+    remediation: 使用预算上限和测算公式形成可停止的试验区间。
+  - id: acquisition_channel_test
+    severity: warning
+    description: 每个建议渠道必须说明人群匹配、承接路径和验证方式。
+    check: 渠道策略包含流量来源、落地触点、成功指标和停止条件。
+    remediation: 将泛化渠道清单改写为渠道假设和最小实验。

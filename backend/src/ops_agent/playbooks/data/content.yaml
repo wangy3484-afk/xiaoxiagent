@@ -1,0 +1,110 @@
+schema_version: "1.0"
+playbook_version: "1.0.0"
+scene: content
+name: 内容运营 Playbook
+description: 面向持续内容经营，覆盖内容定位、目标受众、主题矩阵、供给机制、生产节奏、分发渠道、互动设计和转化路径。
+required_input_fields:
+  - operation_goal
+  - target_users
+  - existing_channels
+  - budget_and_resources
+  - current_problem
+recommended_input_fields:
+  - current_baseline
+  - business_stage
+  - execution_period
+  - constraints
+clarifying_questions:
+  - id: content_positioning
+    field: operation_goal
+    prompt: 内容要帮助哪类受众解决什么持续问题，并最终推动什么业务行为？
+    priority: critical
+    rationale: 内容定位必须同时连接受众价值和业务目标。
+  - id: content_supply
+    field: budget_and_resources
+    prompt: 专家、用户、编辑、设计和外部创作者各能稳定提供多少内容？
+    priority: critical
+    rationale: 供给能力决定主题范围、质量标准和发布节奏。
+  - id: content_distribution
+    field: existing_channels
+    prompt: 各分发渠道的用户意图、内容形态和回流能力分别是什么？
+    priority: high
+    rationale: 同一内容不能忽略平台语境直接复制分发。
+diagnostic_dimensions:
+  - id: content_audience_job
+    name: 受众任务与内容定位
+    focus_questions:
+      - 目标受众在什么场景主动寻找何种帮助？
+      - 现有内容为何没有形成稳定认知或行动？
+    required_outputs:
+      - 受众任务和内容价值承诺
+      - 定位边界与不服务主题
+  - id: content_supply_distribution
+    name: 供给与分发系统
+    focus_questions:
+      - 哪些主题可以持续、可信且差异化地生产？
+      - 内容如何从发现、消费、互动走向业务转化？
+    required_outputs:
+      - 主题矩阵和供给责任
+      - 渠道适配与互动转化路径
+strategy_sections:
+  - id: content_matrix
+    name: 定位与主题矩阵
+    purpose: 用受众问题、内容任务和业务阶段构建可持续主题组合。
+    required_fields:
+      - audience_job
+      - positioning
+      - theme_pillars
+      - content_formats
+      - editorial_boundary
+    decision_rules:
+      - 每个主题必须对应明确受众问题和内容任务
+      - 主题数量不得超过稳定供给能力
+  - id: content_operating_system
+    name: 供给分发互动转化系统
+    purpose: 设计从选题、生产、审核、分发、互动到转化的完整运营机制。
+    required_fields:
+      - supply_roles
+      - production_cadence
+      - quality_gate
+      - channel_adaptation
+      - interaction_design
+      - conversion_path
+    decision_rules:
+      - 不允许仅以提高发文频率替代供给质量和渠道适配
+      - 转化动作必须与内容承诺一致并可被衡量
+required_metrics:
+  - id: content_qualified_reach
+    name: 有效内容触达
+    metric_type: process
+    definition: 目标受众中达到最低有效消费深度的用户规模或比例。
+    formula: 达到有效阅读或观看阈值的目标用户数 / 被触达目标用户数
+    decision_use: 区分表面曝光和真实内容消费。
+  - id: content_engagement_quality
+    name: 高质量互动率
+    metric_type: process
+    definition: 能反映理解、收藏、讨论或主动咨询的有效互动占比。
+    formula: 高质量互动用户数 / 有效内容消费者数
+    decision_use: 判断主题是否真正解决受众问题。
+  - id: content_assisted_conversion
+    name: 内容辅助转化率
+    metric_type: outcome
+    definition: 消费目标内容后在规定窗口完成目标业务行为的用户比例。
+    formula: 窗口内完成目标行为的内容用户数 / 符合条件内容用户数
+    decision_use: 验证内容到业务行为的影响路径，不直接声称因果。
+quality_rules:
+  - id: content_supply_feasibility
+    severity: blocking
+    description: 内容计划必须匹配已确认的专家、创作者、编辑和设计产能。
+    check: 每个主题和频次均有关联供给角色、工时或待确认项。
+    remediation: 缩减主题和频次，或明确新增资源前置条件。
+  - id: content_channel_adaptation
+    severity: blocking
+    description: 分发方案必须说明每个渠道的用户意图、内容形态和回流方式。
+    check: 不允许只列渠道名称而没有渠道适配和转化路径。
+    remediation: 为每个保留渠道补充原生形态、互动机制和下一步行为。
+  - id: content_causality_boundary
+    severity: warning
+    description: 内容消费与转化相关时不得直接表述为内容导致转化。
+    check: 因果结论需要对照实验，否则标记为相关性和待验证假设。
+    remediation: 缩小结论并设计可行的内容增量实验。

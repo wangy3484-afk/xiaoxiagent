@@ -1,0 +1,119 @@
+schema_version: "1.0"
+playbook_version: "1.0.0"
+scene: core
+name: 公共运营决策核心
+description: 约束所有运营报告必须完成需求溯源、问题诊断、证据核验、策略适配、行动闭环、指标实验和风险披露。
+required_input_fields:
+  - current_problem
+  - operation_goal
+  - target_users
+  - execution_period
+  - budget_and_resources
+recommended_input_fields:
+  - business_context
+  - business_stage
+  - existing_channels
+  - current_baseline
+  - constraints
+clarifying_questions:
+  - id: core_goal
+    field: operation_goal
+    prompt: 本次运营工作最优先改变的业务结果或用户行为是什么？
+    priority: critical
+    rationale: 没有优先目标就无法判断策略取舍和效果。
+  - id: core_users
+    field: target_users
+    prompt: 需要影响的是哪类用户，他们当前处于什么阶段？
+    priority: critical
+    rationale: 用户阶段决定触点、机制和衡量口径。
+  - id: core_resources
+    field: budget_and_resources
+    prompt: 可投入的人员、渠道、内容产能、工具和预算上限分别是什么？
+    priority: high
+    rationale: 资源边界决定方案能否执行以及需要放弃什么。
+diagnostic_dimensions:
+  - id: core_goal_chain
+    name: 目标与行为链
+    focus_questions:
+      - 业务结果需要由哪些可干预用户行为推动？
+      - 哪个行为环节是当前最可能的主要瓶颈？
+    required_outputs:
+      - 业务目标到运营目标到用户行为到指标的关系
+      - 核心矛盾及其判断依据
+  - id: core_constraints
+    name: 资源与约束
+    focus_questions:
+      - 周期、预算、团队和系统能力限制是什么？
+      - 哪些前提尚未得到确认？
+    required_outputs:
+      - 明确约束清单
+      - 待验证假设和不可同时满足的取舍
+strategy_sections:
+  - id: core_strategy_basis
+    name: 策略依据与迁移
+    purpose: 说明策略解决的问题、证据依据、适用前提、场景差异和调整方式。
+    required_fields:
+      - reference_evidence
+      - applicability_conditions
+      - scene_differences
+      - adaptations
+      - impact_path
+    decision_rules:
+      - 资源条件不匹配时只能提出缩小实验或放弃理由
+      - 无证据支持的策略必须关联明确假设
+  - id: core_action_plan
+    name: 行动闭环
+    purpose: 将策略转化为有负责人、时间、资源、交付物和验收方式的阶段行动。
+    required_fields:
+      - goal
+      - audience
+      - touchpoint
+      - owner_role
+      - prerequisites
+      - resources
+      - deliverable
+      - timeline
+      - acceptance_criteria
+    decision_rules:
+      - 未指定周期时使用三十六十九十天阶段计划
+      - 早期阶段优先验证最关键且最不确定的假设
+required_metrics:
+  - id: core_outcome_metric
+    name: 核心结果指标
+    metric_type: outcome
+    definition: 直接反映本次运营目标是否实现的结果指标。
+    formula: 按业务口径定义结果事件数与目标用户数的关系
+    decision_use: 用于判断策略是否值得继续扩大或需要停止。
+  - id: core_process_metric
+    name: 关键过程指标
+    metric_type: process
+    definition: 反映策略影响路径中最关键用户行为是否发生的指标。
+    formula: 完成关键行为用户数 / 符合条件用户数
+    decision_use: 用于定位结果未变化时究竟是哪一环节失效。
+  - id: core_risk_metric
+    name: 风险护栏指标
+    metric_type: risk
+    definition: 监控策略可能造成的投诉、退订、成本或体验损害。
+    formula: 风险事件数 / 受到策略影响的用户数
+    decision_use: 达到停止阈值时暂停实验并执行风险预案。
+quality_rules:
+  - id: traceable_facts
+    severity: blocking
+    description: 所有外部事实和关键数据必须可以追溯到可访问证据。
+    check: 事实主张必须关联证据附录中存在的 evidence_id。
+    remediation: 补充原始来源、降级为假设或删除无法核验的主张。
+  - id: closed_loop_actions
+    severity: blocking
+    description: 核心策略必须具备完整行动、时间、指标和验收闭环。
+    check: 每项正式行动必须通过 ActionItem 的全部必填字段校验。
+    remediation: 补齐负责人、资源、时间、交付物和验收标准。
+  - id: no_false_precision
+    severity: blocking
+    description: 缺少可靠基线时不得输出确定的精确效果承诺。
+    check: 无基线的目标区间必须标记 is_hypothesis 并关联实验。
+    remediation: 改为待验证区间并设计用于建立基线的最小实验。
+  - id: decision_support_only
+    severity: blocking
+    description: 报告只能提供决策支持，不得代表用户执行外部运营动作。
+    check: automated_execution_allowed 必须为 false 且报告包含责任说明。
+    remediation: 删除执行调用并补充人工确认和业务责任边界。

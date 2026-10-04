@@ -1,0 +1,109 @@
+schema_version: "1.0"
+playbook_version: "1.0.0"
+scene: retention
+name: 用户留存 Playbook
+description: 面向用户生命周期价值，分析关键留存行为、用户分层、流失信号、触发机制、召回策略和分群验证。
+required_input_fields:
+  - operation_goal
+  - target_users
+  - current_problem
+  - current_baseline
+  - business_stage
+recommended_input_fields:
+  - existing_channels
+  - execution_period
+  - budget_and_resources
+  - constraints
+clarifying_questions:
+  - id: retention_definition
+    field: current_baseline
+    prompt: 留存以什么事件作为回访成立，观察第几天或第几个周期？
+    priority: critical
+    rationale: 不同事件和窗口会产生完全不同的留存结论。
+  - id: retention_key_behavior
+    field: current_problem
+    prompt: 已知哪些早期行为与持续使用相关，目前证据强度如何？
+    priority: critical
+    rationale: 需要先识别价值实现问题，避免用召回掩盖未激活。
+  - id: retention_segments
+    field: target_users
+    prompt: 新用户、活跃用户、沉默用户和流失用户如何划分？
+    priority: high
+    rationale: 不同生命周期用户需要不同触发和价值表达。
+diagnostic_dimensions:
+  - id: retention_lifecycle
+    name: 生命周期与关键行为
+    focus_questions:
+      - 用户从首次价值到习惯形成经历哪些阶段？
+      - 哪个行为最能代表用户获得核心价值？
+    required_outputs:
+      - 生命周期阶段定义
+      - 关键留存行为及证据强度
+  - id: retention_churn_signals
+    name: 流失信号与原因
+    focus_questions:
+      - 哪些行为变化领先于流失？
+      - 产品价值、体验、供给和触达分别有哪些可能解释？
+    required_outputs:
+      - 分群流失信号
+      - 可区分原因的补数或实验方案
+strategy_sections:
+  - id: retention_activation
+    name: 激活与价值实现
+    purpose: 帮助尚未获得核心价值的新用户完成关键行为。
+    required_fields:
+      - lifecycle_stage
+      - target_segment
+      - key_retention_behavior
+      - trigger
+      - value_feedback
+    decision_rules:
+      - 未证明关键行为与留存关系时先验证而不是直接规模化
+      - 激活问题不得仅用消息召回解决
+  - id: retention_reengagement
+    name: 分层召回与持续经营
+    purpose: 根据流失信号、用户价值和可恢复原因设计差异化触发。
+    required_fields:
+      - churn_signal
+      - segment_rule
+      - trigger_timing
+      - recovery_value
+      - frequency_control
+    decision_rules:
+      - 召回权益不得替代产品核心价值
+      - 高频触达必须设置退订和投诉护栏
+required_metrics:
+  - id: cohort_retention_rate
+    name: 分群留存率
+    metric_type: outcome
+    definition: 同一进入周期和分群用户在规定窗口完成留存事件的比例。
+    formula: 窗口内完成留存事件用户数 / 该分群初始用户数
+    decision_use: 比较不同分群和策略版本的持续价值。
+  - id: key_behavior_completion
+    name: 关键留存行为完成率
+    metric_type: process
+    definition: 目标用户在规定早期窗口内完成关键行为的比例。
+    formula: 完成关键行为用户数 / 符合条件目标用户数
+    decision_use: 判断策略是否真正改善价值实现路径。
+  - id: retention_contact_optout
+    name: 触达退订投诉率
+    metric_type: risk
+    definition: 因留存触达产生退订或投诉的用户比例。
+    formula: 退订或投诉用户数 / 被触达用户数
+    decision_use: 达到护栏阈值时降低频率或停止触达。
+quality_rules:
+  - id: retention_cohort_definition
+    severity: blocking
+    description: 留存指标必须明确起点事件、回访事件、分群和观察窗口。
+    check: 留存 MetricDefinition 同时包含事件口径、分母和观察周期。
+    remediation: 统一 cohort 口径后重新计算基线和实验结果。
+  - id: retention_activation_before_recall
+    severity: blocking
+    description: 未完成价值激活的用户不能只依赖利益召回作为核心策略。
+    check: 诊断必须区分未激活、已激活沉默和真实流失用户。
+    remediation: 为未激活用户补充关键行为验证和价值实现方案。
+  - id: retention_segment_validation
+    severity: warning
+    description: 每个分群策略必须有明确行为信号和验证方法。
+    check: 分群规则可以由可观测事件复现并关联结果指标。
+    remediation: 删除无法执行的画像标签或补充可观测代理变量。

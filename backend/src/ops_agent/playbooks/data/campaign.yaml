@@ -1,0 +1,109 @@
+schema_version: "1.0"
+playbook_version: "1.0.0"
+scene: campaign
+name: 活动运营 Playbook
+description: 面向有明确周期的运营活动，覆盖目标、人群、核心机制、利益设计、传播节奏、执行资源、异常预案与复盘设计。
+required_input_fields:
+  - operation_goal
+  - target_users
+  - execution_period
+  - budget_and_resources
+  - existing_channels
+recommended_input_fields:
+  - current_baseline
+  - constraints
+  - business_context
+  - business_stage
+clarifying_questions:
+  - id: campaign_single_goal
+    field: operation_goal
+    prompt: 本次活动唯一的第一优先目标是什么，哪些目标明确不优先？
+    priority: critical
+    rationale: 同时追求拉新、成交、活跃和品牌通常会造成机制冲突。
+  - id: campaign_calendar
+    field: execution_period
+    prompt: 活动开始结束时间、预热窗口、关键峰值和复盘期限分别是什么？
+    priority: critical
+    rationale: 活动策略必须落到可执行的阶段节奏。
+  - id: campaign_capacity
+    field: budget_and_resources
+    prompt: 权益预算、库存、客服、技术和内容产能的硬上限是什么？
+    priority: high
+    rationale: 容量约束决定利益门槛和异常预案。
+diagnostic_dimensions:
+  - id: campaign_goal_mechanism
+    name: 目标与机制匹配
+    focus_questions:
+      - 用户为什么会在活动期采取目标行为？
+      - 核心机制是否直接推动第一优先目标？
+    required_outputs:
+      - 单一第一目标和护栏目标
+      - 用户动机到活动机制的因果假设
+  - id: campaign_execution_capacity
+    name: 节奏与承载能力
+    focus_questions:
+      - 各阶段需要哪些跨团队依赖？
+      - 流量、库存、客服或系统超载时如何降级？
+    required_outputs:
+      - 预热上线持续收尾复盘时间表
+      - 容量阈值和异常降级预案
+strategy_sections:
+  - id: campaign_mechanism
+    name: 活动机制与利益设计
+    purpose: 将用户动机、参与门槛、权益成本和目标行为连成可验证机制。
+    required_fields:
+      - target_behavior
+      - participation_rule
+      - incentive_design
+      - cost_cap
+      - anti_abuse_rule
+    decision_rules:
+      - 权益只能强化目标行为，不能成为唯一价值
+      - 奖励成本和作弊风险必须具有上限
+  - id: campaign_rhythm
+    name: 传播与执行节奏
+    purpose: 按预热、上线、持续、收尾和复盘安排触点、内容、责任和验收。
+    required_fields:
+      - warm_up
+      - launch
+      - sustain
+      - close
+      - retrospective
+    decision_rules:
+      - 每阶段必须有交付物和继续或停止判断
+      - 峰值阶段必须包含异常监控和降级动作
+required_metrics:
+  - id: campaign_incremental_goal
+    name: 活动增量目标达成
+    metric_type: outcome
+    definition: 排除自然基线后可归因于活动的目标行为增量。
+    formula: 活动期目标行为 - 可比基线目标行为
+    decision_use: 判断活动是否创造增量而非搬运自然需求。
+  - id: campaign_participation_funnel
+    name: 活动参与漏斗
+    metric_type: process
+    definition: 从触达、到达、参与到完成目标行为的分步转化。
+    formula: 下一阶段用户数 / 当前阶段用户数
+    decision_use: 定位传播、规则理解或参与门槛问题。
+  - id: campaign_cost_and_abuse
+    name: 单次目标行为成本与异常率
+    metric_type: risk
+    definition: 活动成本效率以及疑似作弊、超领或投诉占比。
+    formula: 活动总成本 / 增量目标行为数，并同时监控异常用户数 / 参与用户数
+    decision_use: 达到预算或异常阈值时收紧规则或停止活动。
+quality_rules:
+  - id: campaign_incrementality
+    severity: blocking
+    description: 活动效果不能只报告活动期总量，必须说明可比基线或增量验证方法。
+    check: 结果指标包含历史同期、对照组或其他可解释增量的方法。
+    remediation: 补充对照设计，无法补充时将效果结论降级为相关性观察。
+  - id: campaign_full_rhythm
+    severity: blocking
+    description: 正式活动计划必须覆盖预热、上线、持续、收尾和复盘五个阶段。
+    check: 五阶段均包含负责人、交付物、时间和验收方式。
+    remediation: 补齐缺失阶段及跨团队依赖。
+  - id: campaign_contingency
+    severity: blocking
+    description: 涉及权益、库存或流量峰值的活动必须有异常和降级预案。
+    check: 风险清单覆盖超预算、库存不足、系统异常、客服峰值和作弊。
+    remediation: 为触发阈值绑定负责人和具体处置动作。

@@ -1,0 +1,245 @@
+schema_version: "1.0"
+scenarios:
+  - scenario_id: golden-acquisition-01
+    scene: acquisition
+    title: 区域生鲜小程序冷启动获客
+    anonymized_context: 一家区域生鲜零售团队刚上线自有小程序，已有稳定门店客流，希望建立可归因的新客首单增长路径。
+    input_text: 目标是在八周内验证门店社群与本地生活内容渠道对新注册家庭用户首单的贡献，现有两名运营和可确认的小额实验预算。
+    known_constraints:
+      - 不接入个人客户明细，只使用汇总漏斗数据
+      - 首轮仅覆盖两个门店片区
+      - 预算优先保障可归因的最小实验
+    baseline_status: confirmed
+    expected_delivery_status: formal
+    required_sections: &all_sections
+      - executive_summary
+      - operations_brief
+      - diagnosis
+      - goals_and_metrics
+      - audience_analysis
+      - case_evidence
+      - strategy_design
+      - action_plan
+      - resource_and_budget
+      - experiment_plan
+      - risk_plan
+      - evidence_appendix
+    expected_blockers: []
+    professional_review_benchmark: &acquisition_benchmark
+      requirements_completeness: 必须明确合格新客、首个价值行为、周期、预算和渠道归因边界，不得把注册量直接等同有效增长。
+      evidence_quality: 案例事实必须可追溯，渠道效果数据需说明来源与时间，只有实施动作的材料不能证明获客提升。
+      scene_fit: 必须比较案例与当前门店流量、品牌认知、渠道能力和团队规模，并将头部玩法缩小为可验证机制。
+      strategy_logic: 必须形成目标人群、价值主张、渠道角色、触达路径、漏斗和获客成本假设之间的完整影响链。
+      execution_feasibility: 行动必须按阶段明确负责人、门店或线上触点、内容与技术资源、交付物、时间和验收方式。
+      measurement: 必须同时评估合格新客结果、漏斗过程和低质量获客风险，并用对照或分渠道实验验证归因。
+      risk_coverage: 必须覆盖补贴套利、低质量注册、渠道不可归因、履约承载和用户投诉风险及停止条件。
+
+  - scenario_id: golden-acquisition-02
+    scene: acquisition
+    title: 企业服务试用用户有效获客
+    anonymized_context: 一家小型企业服务产品依赖内容下载带来试用注册，但销售反馈大量线索并不符合目标客户条件。
+    input_text: 希望参考公开企业增长案例，重新定义目标线索、内容承接和试用激活路径；当前没有可靠的分渠道获客成本基线。
+    known_constraints:
+      - 市场与销售团队合计三人
+      - 无可靠分渠道成本和合格线索基线
+      - 首轮不能采购新的营销自动化系统
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: false_precision
+        rationale: 无可靠分渠道基线时，任何确定获客成本或转化提升数字都必须被阻断并改为基线实验。
+        revision_target: plan
+    professional_review_benchmark: *acquisition_benchmark
+
+  - scenario_id: golden-acquisition-03
+    scene: acquisition
+    title: 本地技能培训低预算招生
+    anonymized_context: 一家本地技能培训团队计划从线下转向线上获客，但品牌知名度、素材产能和投放经验都有限。
+    input_text: 希望在一个月内获得更多有效咨询，预算尚未确认，只能由一名运营兼顾内容、社群和渠道测试。
+    known_constraints:
+      - 一名运营负责全部执行
+      - 预算尚未确认
+      - 不得承诺报名效果
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: resource_conflict
+        rationale: 若方案同时要求多渠道投放、高频内容和复杂社群承接，将明显超过一名运营的执行产能。
+        revision_target: plan
+    professional_review_benchmark: *acquisition_benchmark
+
+  - scenario_id: golden-retention-01
+    scene: retention
+    title: 订阅工具新用户首月留存
+    anonymized_context: 一款面向小团队的订阅工具已建立注册和付费事件，发现新用户在首次配置后是否完成协作行为与续费表现相关。
+    input_text: 希望针对注册三十天内用户设计分层留存方案，先验证关键行为，再决定是否增加站内引导和消息触达。
+    known_constraints:
+      - 已有注册、配置、协作和续费事件
+      - 产品与运营可共同支持两轮实验
+      - 触达必须提供频控和退出机制
+    baseline_status: confirmed
+    expected_delivery_status: formal
+    required_sections: *all_sections
+    expected_blockers: []
+    professional_review_benchmark: &retention_benchmark
+      requirements_completeness: 必须明确生命周期阶段、目标分群、现有留存口径、可用行为事件和触达能力，未知项不得被补造成事实。
+      evidence_quality: 必须区分案例中的留存相关性与因果证据，企业公开动作不能直接证明相同机制会提升当前产品留存。
+      scene_fit: 必须比较产品价值、使用频率、用户阶段、触达渠道和团队能力，避免把高频产品召回机制照搬到低频场景。
+      strategy_logic: 必须先定义关键留存行为和流失信号，再匹配触发、价值反馈与召回，不得用消息触达掩盖激活问题。
+      execution_feasibility: 分层规则、触发时机、频控、负责人、产品依赖、交付物和复盘节点必须能够被现有团队实际执行。
+      measurement: 必须明确 cohort 起点、回访事件、分群和观察窗口，并通过分群或对照验证关键行为与留存关系。
+      risk_coverage: 必须覆盖过度触达、错误分群、优惠依赖、核心价值不足和投诉退订风险，并提供停止与降级规则。
+
+  - scenario_id: golden-retention-02
+    scene: retention
+    title: 预约服务沉默用户召回
+    anonymized_context: 一项低频预约服务发现部分历史用户长期未再次预约，但当前无法区分自然低频、体验问题和需求消失。
+    input_text: 希望制定沉默用户召回方案，现有数据只有最近一次预约时间，没有稳定的分群留存基线和完整流失原因。
+    known_constraints:
+      - 业务天然低频
+      - 只有最近预约时间可用
+      - 不允许高频消息轰炸
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: insufficient_diagnosis_data
+        rationale: 无法区分自然低频与真实流失时，直接选择单一召回方案会掩盖多个可能解释。
+        revision_target: diagnosis
+    professional_review_benchmark: *retention_benchmark
+
+  - scenario_id: golden-retention-03
+    scene: retention
+    title: 商家工具激活不足与次月流失
+    anonymized_context: 一款商家经营工具的新注册用户多数未完成首个经营配置，团队却倾向直接用优惠券召回所有流失用户。
+    input_text: 目标是改善次月留存，但尚未确认首个经营配置与留存的关系，希望先判断激活问题还是召回问题更优先。
+    known_constraints:
+      - 当前只有注册和次月登录汇总数据
+      - 优惠预算有限
+      - 产品团队一个月内只能支持一个小改动
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: correlation_as_causation
+        rationale: 未验证关键配置行为与留存关系前，不能把行为相关性表述为确定因果并直接全面上线。
+        revision_target: strategy
+    professional_review_benchmark: *retention_benchmark
+
+  - scenario_id: golden-campaign-01
+    scene: campaign
+    title: 社区零售节日促活活动
+    anonymized_context: 一家社区零售团队计划在节日期间提升老客到店与线上复购，库存、客服和门店执行资源均已确认。
+    input_text: 活动周期为三周，需要覆盖预热、上线、持续、收尾和复盘，第一目标是提升符合条件老客的复购行为。
+    known_constraints:
+      - 活动周期和预算上限已确认
+      - 库存与客服容量有明确阈值
+      - 必须设置防套利和活动降级方案
+    baseline_status: confirmed
+    expected_delivery_status: formal
+    required_sections: *all_sections
+    expected_blockers: []
+    professional_review_benchmark: &campaign_benchmark
+      requirements_completeness: 必须明确活动第一目标、目标人群、周期、预算、库存、客服承载和现有基线，避免同时追求互相冲突的目标。
+      evidence_quality: 案例中的活动动作、参与规模和效果数字必须分别核验，宣传口径不能直接作为增量效果证明。
+      scene_fit: 必须比较活动品类、用户动机、渠道流量、权益成本和组织承载，将大规模活动机制转换为当前可控范围。
+      strategy_logic: 活动目标、人群、参与规则、利益设计、传播节奏和目标行为必须闭环，并说明为什么机制能够影响目标行为。
+      execution_feasibility: 必须覆盖预热、上线、持续、收尾和复盘，且每阶段都有负责人、资源、交付物、验收和异常降级动作。
+      measurement: 必须区分活动参与、目标行为增量和风险指标，明确对照、归因窗口、成本口径与继续或停止判断。
+      risk_coverage: 必须覆盖库存、权益套利、流量峰值、客服压力、规则误解和活动后回落风险及触发阈值。
+
+  - scenario_id: golden-campaign-02
+    scene: campaign
+    title: 企业客户线上发布会转化
+    anonymized_context: 一家企业服务团队准备举办线上发布会，希望同时获得品牌曝光、线索和成交，但销售跟进能力有限。
+    input_text: 当前只有六周准备时间和两名销售，希望输出活动机制、传播节奏、线索分层和会后跟进计划。
+    known_constraints:
+      - 六周固定周期
+      - 只有两名销售负责会后跟进
+      - 品牌曝光与成交不能同时作为唯一第一目标
+    baseline_status: confirmed
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: conflicting_primary_goals
+        rationale: 若方案同时把曝光、线索和成交设为同等第一目标，资源和指标将无法形成清晰取舍。
+        revision_target: diagnosis
+    professional_review_benchmark: *campaign_benchmark
+
+  - scenario_id: golden-campaign-03
+    scene: campaign
+    title: 新业务首场裂变活动想法
+    anonymized_context: 一个刚进入验证期的新业务希望快速策划裂变活动，但尚未明确目标用户、第一目标和可用权益预算。
+    input_text: 目前只有做一场能快速传播的活动这个想法，希望直接获得完整执行方案，暂时无法提供目标用户和预算信息。
+    known_constraints:
+      - 目标用户尚未确认
+      - 权益预算尚未确认
+      - 不允许自动创建或投放活动
+    baseline_status: unknown
+    expected_delivery_status: failure_explanation
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: requirements_completeness
+        rationale: 核心目标用户和活动第一目标缺失，无法形成可负责的正式策略和执行计划。
+        revision_target: diagnosis
+    professional_review_benchmark: *campaign_benchmark
+
+  - scenario_id: golden-content-01
+    scene: content
+    title: 专业服务内容获客与咨询转化
+    anonymized_context: 一家专业服务团队已有稳定专家供给，希望用深度内容帮助潜在客户完成问题识别并进入咨询流程。
+    input_text: 目标是在一个季度内建立主题矩阵、专家供给、生产节奏、渠道分发和咨询承接路径，现有内容与咨询数据可用。
+    known_constraints:
+      - 专家每周最多提供两小时内容输入
+      - 合规审核必须在发布前完成
+      - 内容目标优先服务高意向咨询而非泛流量
+    baseline_status: confirmed
+    expected_delivery_status: formal
+    required_sections: *all_sections
+    expected_blockers: []
+    professional_review_benchmark: &content_benchmark
+      requirements_completeness: 必须明确内容服务的受众任务、业务行为、可用专家供给、渠道、周期和现有内容基线。
+      evidence_quality: 平台案例、内容形式和效果数据必须可追溯，不能把高阅读量案例直接证明为当前咨询或成交增长。
+      scene_fit: 必须比较受众意图、专业门槛、渠道原生形态、内容产能和转化链路，避免只复制热门栏目名称。
+      strategy_logic: 内容定位、受众问题、主题矩阵、供给机制、生产节奏、分发互动和转化路径必须形成闭环。
+      execution_feasibility: 选题、专家输入、生产、审核、发布、互动和复盘都必须有负责人、产能假设、交付物与验收方式。
+      measurement: 必须覆盖有效触达、互动质量、后续行为和风险指标，并通过主题或渠道实验验证内容贡献。
+      risk_coverage: 必须覆盖内容同质化、专家产能不足、合规错误、平台依赖、低质互动和转化链路断裂风险。
+
+  - scenario_id: golden-content-02
+    scene: content
+    title: 消费品牌短内容矩阵试验
+    anonymized_context: 一个小型消费品牌希望同时经营多个内容平台，但当前只有一名内容运营和有限的拍摄支持。
+    input_text: 希望参考公开内容运营案例建立多平台矩阵，并在两个月内快速提高曝光和购买转化，当前预算与基线都不明确。
+    known_constraints:
+      - 只有一名内容运营
+      - 每周最多完成三条短内容
+      - 预算与各平台转化基线未知
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: resource_conflict
+        rationale: 若直接设计全平台高频内容矩阵，将超出一名运营和每周三条内容的确认产能。
+        revision_target: plan
+    professional_review_benchmark: *content_benchmark
+
+  - scenario_id: golden-content-03
+    scene: content
+    title: 行业知识社区内容活跃
+    anonymized_context: 一个行业知识社区文章数量持续增加，但有效讨论和用户回访没有同步增长，团队只有阅读量数据。
+    input_text: 希望通过主题栏目和创作者激励提升社区活跃，但尚未定义高质量互动、回访行为和内容后的转化路径。
+    known_constraints:
+      - 当前只有文章阅读量
+      - 创作者激励预算待确认
+      - 不能用纯内容数量代替社区价值
+    baseline_status: unknown
+    expected_delivery_status: directional_draft
+    required_sections: *all_sections
+    expected_blockers:
+      - blocker_code: metric_definition
+        rationale: 未定义高质量互动和回访口径时，阅读量无法单独验证内容策略是否改善社区活跃。
+        revision_target: plan
+    professional_review_benchmark: *content_benchmark

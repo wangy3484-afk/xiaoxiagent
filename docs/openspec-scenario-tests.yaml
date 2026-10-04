@@ -1,0 +1,69 @@
+# OpenSpec scenario -> primary automated test mapping.
+# The mapping test checks that every scenario and target test entry exist.
+professional-operations-intake:
+  输入包含完整运营信息: backend/tests/workflows/test_intake.py::test_complete_input_is_structured_with_user_provenance
+  输入为非结构化想法: backend/tests/workflows/test_intake.py::test_ambiguous_idea_preserves_missing_fields_as_unknown
+  单一运营场景: backend/tests/workflows/test_classification.py::test_classifies_each_single_scene
+  跨场景需求: backend/tests/workflows/test_classification.py::test_cross_scene_request_keeps_one_primary_and_auxiliaries
+  缺少生成专业方案所需信息: backend/tests/workflows/test_questions.py::test_graph_interrupts_before_research_when_required_fields_are_missing
+  用户无法提供基线数据: backend/tests/workflows/test_questions.py::test_unknown_baseline_stays_unknown_after_question_generation
+  用户修改系统提取结果: backend/tests/api/test_brief_workflow.py::test_parse_revise_confirm_happy_path_and_data_boundary
+  用户确认运营简报: backend/tests/workflows/test_confirmation.py::test_modified_brief_is_used_after_interrupt_resume_and_frozen
+  用户准备提交运营场景: backend/tests/api/test_brief_workflow.py::test_parse_revise_confirm_happy_path_and_data_boundary
+
+benchmark-evidence-research:
+  用户指定头部企业作为参考: backend/tests/workflows/test_research_plan.py::test_research_plan_covers_named_companies_and_structural_cases
+  指定企业没有相关案例: backend/tests/workflows/test_research_plan.py::test_unverified_named_company_is_replaced_with_explained_verified_case
+  引用公开案例事实: backend/tests/workflows/test_case_mechanism_extraction.py::test_extracts_claim_evidence_links_and_downgrades_summary_only_fact
+  来源缺少发布日期: backend/tests/workflows/test_evidence_assessment.py::test_assesses_source_type_freshness_and_resource_fit
+  多种来源支持同一主张: backend/tests/workflows/test_case_mechanism_extraction.py::test_multiple_original_sources_can_support_one_fact
+  只有低可信度来源: backend/tests/workflows/test_evidence_coverage.py::test_single_low_unknown_source_is_insufficient_and_downgrades_fact
+  头部企业案例资源条件差异明显: backend/tests/workflows/test_case_mechanism_migration.py::test_case_migration_scales_down_when_resources_do_not_match
+  案例与当前场景高度匹配: backend/tests/workflows/test_evidence_assessment.py::test_evidence_assessment_covers_all_adaptation_dimensions
+  证据覆盖充分: backend/tests/workflows/test_report_delivery.py::test_only_sufficient_evidence_and_passed_quality_becomes_formal
+  公开信息不足: backend/tests/workflows/test_evidence_coverage.py::test_no_public_evidence_is_reported_as_insufficient
+  两个来源给出不同效果数据: backend/tests/workflows/test_evidence_coverage.py::test_detects_conflicting_numeric_claims_and_downgrades_them
+  搜索摘要无法被原页面核验: backend/tests/workflows/test_case_mechanism_extraction.py::test_extracts_claim_evidence_links_and_downgrades_summary_only_fact
+
+operations-strategy-planning:
+  用户提出结果型目标: backend/tests/workflows/test_diagnosis.py::test_diagnosis_decomposes_result_goal_into_target_behavior
+  诊断依赖缺失数据: backend/tests/workflows/test_diagnosis.py::test_diagnosis_adds_verifiable_explanations_when_data_is_missing
+  拉新增长方案: backend/tests/workflows/test_acquisition_strategy.py::test_acquisition_strategy_golden_sample_without_baseline_is_hypothetical
+  用户留存方案: backend/tests/workflows/test_retention_strategy.py::test_retention_strategy_golden_sample_has_complete_validation
+  活动运营方案: backend/tests/workflows/test_campaign_strategy.py::test_campaign_strategy_golden_sample_covers_full_rhythm
+  内容运营方案: backend/tests/workflows/test_content_strategy.py::test_content_strategy_golden_sample_is_not_template_title_swap
+  采用案例中的运营机制: backend/tests/workflows/test_case_mechanism_migration.py::test_case_migration_scales_down_when_resources_do_not_match
+  案例不具备直接迁移条件: backend/tests/workflows/test_case_mechanism_migration.py::test_case_migration_scales_down_when_resources_do_not_match
+  用户未指定执行周期: backend/tests/workflows/test_action_plan.py::test_action_plan_uses_default_30_60_90_when_period_missing
+  用户指定短期活动周期: backend/tests/workflows/test_campaign_strategy.py::test_campaign_strategy_golden_sample_covers_full_rhythm
+  存在可靠业务基线: backend/tests/workflows/test_measurement_plan.py::test_measurement_plan_keeps_baseline_based_targets_when_baseline_exists
+  不存在可靠业务基线: backend/tests/workflows/test_measurement_plan.py::test_measurement_plan_without_baseline_creates_validation_targets
+  用户提供预算上限: backend/tests/workflows/test_resource_budget_risk_summary.py::test_budget_ceiling_produces_priorities_and_explicit_trade_offs
+  用户未提供预算: backend/tests/workflows/test_resource_budget_risk_summary.py::test_unknown_budget_removes_precise_amount_and_requires_confirmation
+  生成正式报告: backend/tests/workflows/test_report_delivery.py::test_only_sufficient_evidence_and_passed_quality_becomes_formal
+  报告包含可执行动作: backend/tests/workflows/test_deterministic_quality.py::test_valid_report_passes_every_deterministic_rule
+
+operations-report-quality:
+  报告进入交付前审查: backend/tests/workflows/test_professional_quality_review.py::test_review_identifies_four_professional_failure_patterns_without_rewrite
+  关键事实缺少来源: backend/tests/workflows/test_deterministic_quality.py::test_each_deterministic_rule_has_a_blocking_failure_fixture
+  方案缺少执行闭环: backend/tests/workflows/test_deterministic_quality.py::test_each_deterministic_rule_has_a_blocking_failure_fixture
+  来源只证明实施动作: backend/tests/workflows/test_professional_quality_review.py::test_review_identifies_four_professional_failure_patterns_without_rewrite
+  单一案例被用于支持普遍结论: backend/tests/workflows/test_professional_quality_review.py::test_review_identifies_four_professional_failure_patterns_without_rewrite
+  目标与资源不匹配: backend/tests/workflows/test_professional_quality_review.py::test_review_identifies_four_professional_failure_patterns_without_rewrite
+  指标无法验证策略目标: backend/tests/workflows/test_deterministic_quality.py::test_each_deterministic_rule_has_a_blocking_failure_fixture
+  缺少基线却给出精确提升目标: backend/tests/workflows/test_professional_quality_review.py::test_review_identifies_four_professional_failure_patterns_without_rewrite
+  策略依赖未确认能力: backend/tests/workflows/test_report_assembly.py::test_assembly_contains_all_sections_and_four_claim_labels
+  证据不足但仍可提供方向性建议: backend/tests/workflows/test_report_delivery.py::test_insufficient_evidence_cannot_become_formal
+  关键输入始终无法获得: backend/tests/workflows/test_report_delivery.py::test_missing_key_input_becomes_failure_explanation
+
+operations-report-delivery:
+  报告正在生成: backend/tests/api/test_job_lifecycle.py::test_status_and_event_summary_expose_progress_and_safe_failure
+  报告生成失败: backend/tests/api/test_job_lifecycle.py::test_status_and_event_summary_expose_progress_and_safe_failure
+  用户阅读案例分析: frontend/src/reports/Reports.test.tsx::renders a read-only report with table of contents and version navigation
+  用户重新生成报告: backend/tests/api/test_job_lifecycle.py::test_regeneration_creates_versioned_job_and_preserves_source_report
+  用户查看历史报告: backend/tests/api/test_authorization.py::test_owner_can_read_all_resources_but_cross_user_cannot_probe_them
+  导出 PDF 报告: backend/tests/integration/test_full_journey.py::test_offline_journey_from_login_to_report_and_both_exports
+  导出可编辑报告: backend/tests/integration/test_full_journey.py::test_offline_journey_from_login_to_report_and_both_exports
+  未登录访问报告: backend/tests/api/test_authorization.py::test_protected_resources_require_authentication
+  用户访问无权限报告: backend/tests/api/test_authorization.py::test_owner_can_read_all_resources_but_cross_user_cannot_probe_them
+  用户查看正式报告结论: backend/tests/domain/test_report_models.py::test_all_export_formats_include_responsibility_boundaries

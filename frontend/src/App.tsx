@@ -1,5 +1,15 @@
 import { Link, Route, Routes } from "react-router-dom";
 
+import {
+  AuthProvider,
+  LoginPage,
+  ProtectedRoute,
+} from "./auth/AuthContext";
+import { BriefWorkspace } from "./briefs/BriefWorkspace";
+import { JobStatusPage } from "./jobs/JobStatusPage";
+import { ReportHistoryPage } from "./reports/ReportHistoryPage";
+import { ReportReaderPage } from "./reports/ReportReaderPage";
+
 function HomePage() {
   return (
     <main className="shell">
@@ -12,20 +22,7 @@ function HomePage() {
         请勿输入个人隐私、客户明细或公司机密；可以使用汇总指标和匿名描述。
       </aside>
       <Link className="primary-link" to="/reports">
-        查看报告工作台
-      </Link>
-    </main>
-  );
-}
-
-function ReportsPage() {
-  return (
-    <main className="shell">
-      <p className="eyebrow">REPORT WORKSPACE</p>
-      <h1>报告工作台</h1>
-      <p className="lead">报告任务、历史版本和证据将在这里展示。</p>
-      <Link className="secondary-link" to="/">
-        返回首页
+        登录并进入报告工作台
       </Link>
     </main>
   );
@@ -33,9 +30,43 @@ function ReportsPage() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/reports" element={<ReportsPage />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <ReportHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/:reportId"
+          element={
+            <ProtectedRoute>
+              <ReportReaderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/briefs/new"
+          element={
+            <ProtectedRoute>
+              <BriefWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs/:jobId"
+          element={
+            <ProtectedRoute>
+              <JobStatusPage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </AuthProvider>
   );
 }

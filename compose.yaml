@@ -37,6 +37,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: api
     command:
       - uvicorn
       - ops_agent.main:app
@@ -47,7 +48,10 @@ services:
     environment: &backend_environment
       OPS_AGENT_ENVIRONMENT: development
       OPS_AGENT_DATABASE_URL: postgresql+asyncpg://ops_agent:ops_agent@postgres:5432/ops_agent
+      OPS_AGENT_CHECKPOINT_DATABASE_URL: postgresql://ops_agent:ops_agent@postgres:5432/ops_agent
+      OPS_AGENT_CHECKPOINT_SCHEMA: langgraph_checkpoint
       OPS_AGENT_REDIS_URL: redis://redis:6379/0
+      LANGGRAPH_STRICT_MSGPACK: "true"
       OPS_AGENT_SESSION_SECRET: ${OPS_AGENT_SESSION_SECRET:-development-only-change-me}
       OPS_AGENT_MODEL_PROVIDER: ${OPS_AGENT_MODEL_PROVIDER:-openai-compatible}
       OPS_AGENT_MODEL_NAME: ${OPS_AGENT_MODEL_NAME:-gpt-4.1-mini}
@@ -56,6 +60,8 @@ services:
       OPS_AGENT_SEARCH_PROVIDER: ${OPS_AGENT_SEARCH_PROVIDER:-tavily}
       OPS_AGENT_SEARCH_API_KEY: ${OPS_AGENT_SEARCH_API_KEY:-}
       OPS_AGENT_ARTIFACT_STORAGE_PATH: /app/artifacts
+      OPS_AGENT_JOB_EVENT_RETENTION_DAYS: ${OPS_AGENT_JOB_EVENT_RETENTION_DAYS:-90}
+      OPS_AGENT_TEMPORARY_ARTIFACT_RETENTION_DAYS: ${OPS_AGENT_TEMPORARY_ARTIFACT_RETENTION_DAYS:-7}
     ports:
       - "8000:8000"
     volumes:
@@ -81,6 +87,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: worker
     hostname: worker
     command:
       - celery
@@ -111,15 +118,13 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
-    environment:
-      VITE_API_BASE_URL: http://localhost:8000
     ports:
-      - "4173:4173"
+      - "${OPS_AGENT_WEB_PORT:-4200}:8080"
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4173/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
       interval: 10s
       timeout: 5s
       retries: 12

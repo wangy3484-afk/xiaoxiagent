@@ -1,0 +1,260 @@
+name: ops-strategy-agent-prod
+
+x-backend-environment: &backend_environment
+  OPS_AGENT_ENVIRONMENT: production
+  OPS_AGENT_LOG_LEVEL: ${OPS_AGENT_LOG_LEVEL:-INFO}
+  OPS_AGENT_DATABASE_URL: ${OPS_AGENT_DATABASE_URL:?OPS_AGENT_DATABASE_URL is required}
+  OPS_AGENT_CHECKPOINT_DATABASE_URL: ${OPS_AGENT_CHECKPOINT_DATABASE_URL:?OPS_AGENT_CHECKPOINT_DATABASE_URL is required}
+  OPS_AGENT_CHECKPOINT_SCHEMA: ${OPS_AGENT_CHECKPOINT_SCHEMA:-langgraph_checkpoint}
+  OPS_AGENT_REDIS_URL: redis://redis:6379/0
+  LANGGRAPH_STRICT_MSGPACK: "true"
+  OPS_AGENT_SESSION_SECRET: ${OPS_AGENT_SESSION_SECRET:?OPS_AGENT_SESSION_SECRET is required}
+  OPS_AGENT_SESSION_COOKIE_SECURE: "true"
+  OPS_AGENT_SESSION_COOKIE_SAME_SITE: lax
+  OPS_AGENT_MODEL_PROVIDER: ${OPS_AGENT_MODEL_PROVIDER:-openai-compatible}
+  OPS_AGENT_MODEL_NAME: ${OPS_AGENT_MODEL_NAME:-gpt-4.1-mini}
+  OPS_AGENT_MODEL_BASE_URL: ${OPS_AGENT_MODEL_BASE_URL:-https://api.openai.com/v1}
+  OPS_AGENT_MODEL_HEALTH_URL: ${OPS_AGENT_MODEL_HEALTH_URL:-}
+  OPS_AGENT_MODEL_API_KEY: ${OPS_AGENT_MODEL_API_KEY:?OPS_AGENT_MODEL_API_KEY is required}
+  OPS_AGENT_SEARCH_PROVIDER: ${OPS_AGENT_SEARCH_PROVIDER:-tavily}
+  OPS_AGENT_SEARCH_BASE_URL: ${OPS_AGENT_SEARCH_BASE_URL:-https://api.tavily.com}
+  OPS_AGENT_SEARCH_API_KEY: ${OPS_AGENT_SEARCH_API_KEY:?OPS_AGENT_SEARCH_API_KEY is required}
+  OPS_AGENT_ARTIFACT_STORAGE_PATH: /app/artifacts
+  OPS_AGENT_REPORT_BRAND_TITLE: ${OPS_AGENT_REPORT_BRAND_TITLE:-}
+  OPS_AGENT_REPORT_BRAND_HEADER: ${OPS_AGENT_REPORT_BRAND_HEADER:-}
+  OPS_AGENT_REPORT_BRAND_LOGO_PATH: ${OPS_AGENT_REPORT_BRAND_LOGO_PATH:-}
+  OPS_AGENT_REPORT_RETENTION_DAYS: ${OPS_AGENT_REPORT_RETENTION_DAYS:-180}
+  OPS_AGENT_SOURCE_SNAPSHOT_RETENTION_DAYS: ${OPS_AGENT_SOURCE_SNAPSHOT_RETENTION_DAYS:-30}
+  OPS_AGENT_JOB_EVENT_RETENTION_DAYS: ${OPS_AGENT_JOB_EVENT_RETENTION_DAYS:-90}
+  OPS_AGENT_TEMPORARY_ARTIFACT_RETENTION_DAYS: ${OPS_AGENT_TEMPORARY_ARTIFACT_RETENTION_DAYS:-7}
+  OPS_AGENT_MONITOR_INTERVAL_SECONDS: ${OPS_AGENT_MONITOR_INTERVAL_SECONDS:-15}
+  OPS_AGENT_MONITOR_FAILURE_THRESHOLD: ${OPS_AGENT_MONITOR_FAILURE_THRESHOLD:-2}
+  OPS_AGENT_MONITOR_QUEUE_BACKLOG_THRESHOLD: ${OPS_AGENT_MONITOR_QUEUE_BACKLOG_THRESHOLD:-20}
+
+x-app-security: &app_security
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_DB: ${OPS_AGENT_POSTGRES_DB:-ops_agent}
+      POSTGRES_USER: ${OPS_AGENT_POSTGRES_USER:-ops_agent}
+      POSTGRES_PASSWORD: ${OPS_AGENT_POSTGRES_PASSWORD:?OPS_AGENT_POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+
+  redis:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+
+  migrate:
+    image: xiaoxiagent-api:${OPS_AGENT_MIGRATION_IMAGE_TAG:-${OPS_AGENT_IMAGE_TAG:-latest}}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend_environment
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    restart: "no"
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+
+  api:
+    image: xiaoxiagent-api:${OPS_AGENT_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    environment: *backend_environment
+    volumes:
+      - report_artifacts:/app/artifacts
+    networks:
+      - edge
+      - backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    <<: *app_security
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 256
+
+  worker:
+    image: xiaoxiagent-worker:${OPS_AGENT_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: worker
+    hostname: worker
+    command:
+      - celery
+      - -A
+      - ops_agent.worker:celery_app
+      - worker
+      - --loglevel=INFO
+      - --hostname=worker@%h
+      - --concurrency=2
+    environment: *backend_environment
+    volumes:
+      - report_artifacts:/app/artifacts
+    networks:
+      - edge
+      - backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A ops_agent.worker:celery_app inspect ping --destination worker@worker --timeout 5 | grep -q pong
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+    <<: *app_security
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 256
+
+  monitor:
+    image: xiaoxiagent-api:${OPS_AGENT_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    command: ["python", "-m", "ops_agent.monitor"]
+    environment: *backend_environment
+    networks:
+      - edge
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from pathlib import Path; import time; p=Path('/tmp/ops-agent-monitor-heartbeat'); assert p.exists() and time.time()-p.stat().st_mtime < 600"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    <<: *app_security
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+
+  web:
+    image: xiaoxiagent-web:${OPS_AGENT_IMAGE_TAG:-latest}
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    networks:
+      - edge
+    depends_on:
+      api:
+        condition: service_healthy
+    <<: *app_security
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+
+  proxy:
+    image: xiaoxiagent-proxy:${OPS_AGENT_IMAGE_TAG:-latest}
+    build:
+      context: deploy/proxy
+      dockerfile: Dockerfile
+    ports:
+      - "${OPS_AGENT_HTTPS_PORT:-443}:8443"
+    volumes:
+      - type: bind
+        source: ${OPS_AGENT_TLS_CERT_FILE:?OPS_AGENT_TLS_CERT_FILE is required}
+        target: /etc/nginx/tls/tls.crt
+        read_only: true
+      - type: bind
+        source: ${OPS_AGENT_TLS_KEY_FILE:?OPS_AGENT_TLS_KEY_FILE is required}
+        target: /etc/nginx/tls/tls.key
+        read_only: true
+    networks:
+      - edge
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    <<: *app_security
+    tmpfs:
+      - /tmp:rw,nosuid,size=64m,mode=1777
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+
+networks:
+  edge:
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  report_artifacts:

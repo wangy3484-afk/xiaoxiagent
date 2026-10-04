@@ -1,0 +1,49 @@
+schema_version: "1.0"
+playbook_version: "1.1.0"
+scene: acquisition
+name: 垂直行业拉新候选示例
+description: 演示如何为垂直行业提出候选 Playbook；该文件只用于校验和评审，不会被应用启动加载器自动启用。
+required_input_fields:
+  - operation_goal
+  - target_users
+  - current_problem
+recommended_input_fields:
+  - current_baseline
+  - budget_and_resources
+clarifying_questions:
+  - id: example_qualified_lead
+    field: target_users
+    prompt: 哪些行为或资格条件代表一个真正可跟进的有效新客？
+    priority: critical
+    rationale: 垂直行业不能使用表面注册量替代有效线索质量。
+diagnostic_dimensions:
+  - id: example_demand_stage
+    name: 需求成熟度
+    focus_questions:
+      - 用户处于问题认知、方案比较还是采购决策阶段？
+    required_outputs:
+      - 不同需求阶段的目标行为和排除条件
+strategy_sections:
+  - id: example_intent_path
+    name: 意图培育路径
+    purpose: 将渠道内容、资格识别和下一步行动连接成可验证路径。
+    required_fields:
+      - demand_stage
+      - qualification_rule
+      - channel_message
+      - next_action
+    decision_rules:
+      - 不同需求阶段不得使用同一转化承诺和触达频率
+required_metrics:
+  - id: example_qualified_lead_rate
+    name: 有效线索率
+    metric_type: outcome
+    definition: 新增线索中满足明确资格和行为条件的比例。
+    formula: 有效线索数 / 新增线索数
+    decision_use: 用于比较渠道规模和真实线索质量。
+quality_rules:
+  - id: example_no_registration_proxy
+    severity: blocking
+    description: 不得只用注册量代表垂直行业的有效获客结果。
+    check: 目标和指标必须包含可复现的有效线索资格条件。
+    remediation: 补充资格和行为规则后重新评估渠道优先级。
