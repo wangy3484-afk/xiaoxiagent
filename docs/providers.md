@@ -22,6 +22,8 @@ OPS_AGENT_MODEL_BASE_URL=https://api.openai.com/v1
 OPS_AGENT_MODEL_API_KEY=replace-at-deploy-time
 OPS_AGENT_MODEL_TIMEOUT_SECONDS=90
 OPS_AGENT_MODEL_MAX_RETRIES=2
+OPS_AGENT_MODEL_STRUCTURED_OUTPUT_MODE=json_schema
+OPS_AGENT_MODEL_THINKING_MODE=provider_default
 
 OPS_AGENT_SEARCH_PROVIDER=tavily
 OPS_AGENT_SEARCH_BASE_URL=https://api.tavily.com
@@ -34,6 +36,29 @@ OPS_AGENT_FETCH_MAX_REDIRECTS=5
 ```
 
 真实密钥只通过部署环境或密钥管理系统注入，不得写入 `.env.example`、代码、测试 fixture、日志或报告。`Settings.safe_for_logging()` 只提供脱敏配置。开发环境没有密钥时仍可启动基础服务，但创建生产提供商组合会快速失败。
+
+### DeepSeek 预发布配置
+
+DeepSeek 的 Chat Completions JSON Output 使用 `json_object`；本适配器在该模式下把 Pydantic JSON Schema 放入系统消息，并在响应后继续做本地 schema 校验与有界修复。保持默认 `json_schema` 不变，只有对不支持严格 JSON Schema 的供应商才切换模式。根据 [DeepSeek JSON Output 文档](https://api-docs.deepseek.com/guides/json_mode/)，可使用以下**不含密钥**的配置：
+
+```dotenv
+OPS_AGENT_MODEL_PROVIDER=openai-compatible
+OPS_AGENT_MODEL_NAME=deepseek-flash
+OPS_AGENT_MODEL_BASE_URL=https://api.deepseek.com
+OPS_AGENT_MODEL_HEALTH_URL=https://api.deepseek.com/models
+OPS_AGENT_MODEL_STRUCTURED_OUTPUT_MODE=json_object
+OPS_AGENT_MODEL_THINKING_MODE=disabled
+```
+
+`OPS_AGENT_MODEL_API_KEY` 仍只通过未纳入 Git 的部署环境注入。可使用显式测试环境变量运行一次最小真实调用：
+
+`OPS_AGENT_MODEL_THINKING_MODE=disabled` 是 DeepSeek 专用请求参数；在当前工作流每次结构化输出有固定 token 上限时，可避免默认思考内容耗尽上限。对其他供应商保持 `provider_default`，除非该供应商明确支持相同参数。
+
+```powershell
+.venv\Scripts\python -m pytest -q backend/tests/providers/test_openai_compatible_live.py
+```
+
+未设置 `OPS_AGENT_TEST_MODEL_API_KEY` 时该测试跳过。预发布四场景验收还必须使用真实搜索密钥、记录 token 与实际计费口径，并对每份报告人工核验来源；最小调用通过不等于报告验收完成。
 
 ## 在测试中替换
 

@@ -38,6 +38,8 @@ def build_production_providers(settings: Settings) -> ProviderSet:
             model=settings.model_name,
             timeout_seconds=settings.model_timeout_seconds,
             schema_retries=settings.model_max_retries,
+            structured_output_mode=settings.model_structured_output_mode,
+            thinking_mode=settings.model_thinking_mode,
         ),
         search=TavilySearchProvider(
             base_url=str(settings.search_base_url),

@@ -1,6 +1,7 @@
 """Structured operations-report assembly tests."""
 
 from datetime import UTC, date, datetime
+from typing import Any, cast
 
 import pytest
 from ops_agent.domain.intake import (
@@ -34,8 +35,12 @@ from ops_agent.domain.research import (
     SourceType,
 )
 from ops_agent.providers import DeterministicModelProvider
+from ops_agent.report_runner import _namespace_persisted_references
 from ops_agent.workflows.confirmation import ConfirmedBriefBaseline
-from ops_agent.workflows.reporting import build_operations_report
+from ops_agent.workflows.reporting import (
+    _reconcile_strategy_evidence_references,
+    build_operations_report,
+)
 
 
 def _brief_and_classification() -> tuple[OperationsBrief, SceneClassification]:
@@ -294,6 +299,17 @@ def _narrative_response() -> dict[str, object]:
     }
 
 
+def test_unresolvable_strategy_evidence_becomes_explicit_hypothesis() -> None:
+    bundle, _, evidence = _evidence_bundle()
+    strategy = _strategy().model_copy(update={"evidence_ids": [evidence.evidence_id, "missing"]})
+
+    adjusted, downgraded = _reconcile_strategy_evidence_references([strategy], bundle)
+
+    assert adjusted[0].evidence_ids == [evidence.evidence_id]
+    assert any(item.startswith("hyp_strategy_") for item in adjusted[0].assumption_claim_ids)
+    assert downgraded == {strategy.strategy_id}
+
+
 @pytest.mark.asyncio
 async def test_assembly_contains_all_sections_and_four_claim_labels() -> None:
     brief, classification = _brief_and_classification()
@@ -370,3 +386,146 @@ async def test_assembly_contains_all_sections_and_four_claim_labels() -> None:
     assert report.evidence_appendix == [evidence]
     assert report.assumptions[0].claim_id == "hyp-1"
     assert report.automated_execution_allowed is False
+
+    first, first_bundle = _namespace_persisted_references(
+        "11111111-1111-1111-1111-111111111111", report, evidence_bundle
+    )
+    second, second_bundle = _namespace_persisted_references(
+        "22222222-2222-2222-2222-222222222222", report, evidence_bundle
+    )
+    assert first.evidence_appendix[0].evidence_id == first_bundle.evidence[0].evidence_id
+    assert first.key_claims[0].claim_id == first_bundle.claims[0].claim_id
+    assert first.strategies[0].evidence_ids == [first_bundle.evidence[0].evidence_id]
+    assert first.experiments[0].hypothesis_claim_id == first.strategies[0].assumption_claim_ids[0]
+    assert first_bundle.evidence[0].evidence_id != second_bundle.evidence[0].evidence_id
+    assert first_bundle.claims[0].claim_id != second_bundle.claims[0].claim_id
+    assert first.report_id == second.report_id == report.report_id
+
+
+@pytest.mark.asyncio
+async def test_assembly_preserves_referenced_hypotheses_when_model_changes_ids() -> None:
+    brief, classification = _brief_and_classification()
+    evidence_bundle, fact, evidence = _evidence_bundle()
+    narrative = cast(dict[str, Any], _narrative_response())
+    narrative["supplemental_claims"][2]["claim_id"] = "hyp-model-generated"
+    model = DeterministicModelProvider({"assemble_operations_report": narrative})
+    measurement_plan = _measurement_plan()
+    strategy = _strategy()
+    diagnosis = Diagnosis(
+        business_stage="冷启动阶段",
+        target_users="新注册家庭用户",
+        goal_relationships=[
+            GoalRelationship(
+                business_goal="提高有效订单规模",
+                operations_goal="提高新客首单转化",
+                target_behavior="完成首次下单",
+                metric_ids=["metric-outcome"],
+            )
+        ],
+        behavior_path=["注册", "浏览", "提交订单"],
+        core_problem="尚未区分信任不足与承接路径摩擦的影响。",
+        supporting_claim_ids=[fact.claim_id],
+        constraints=["预算待确认"],
+        priority_rationale="先做最小实验可以低成本区分关键解释。",
+    )
+    case = CaseMechanism(
+        case_id="case-1",
+        company="示例公司",
+        goal="承接新客首单",
+        audience="新注册用户",
+        touchpoints=["社群"],
+        mechanism="通过社群信任与提醒承接首次决策",
+        execution_conditions=["社群触达可归因"],
+        observed_outcomes=[fact],
+        evidence_ids=[evidence.evidence_id],
+        transferable_elements=["社群信任机制"],
+        non_transferable_elements=["头部平台自然流量"],
+    )
+    report = await build_operations_report(
+        report_id="report-drift",
+        confirmed_baseline=ConfirmedBriefBaseline(
+            brief=brief,
+            classification=classification,
+            fingerprint_sha256="f" * 64,
+        ),
+        scene_classification=classification,
+        diagnosis=diagnosis,
+        evidence_bundle=evidence_bundle,
+        case_mechanisms=[case],
+        strategies=[strategy],
+        action_plan=_action_plan(),
+        measurement_plan=measurement_plan,
+        resource_budget_risk_summary=_resource_summary(),
+        model=model,
+        generated_at=datetime(2026, 9, 30, tzinfo=UTC),
+    )
+
+    assert "hyp-1" in {claim.claim_id for claim in report.assumptions}
+    assert "hyp-model-generated" in {claim.claim_id for claim in report.assumptions}
+    assert any("假设主张由作用路径补全" in item for item in report.limitations)
+
+
+@pytest.mark.asyncio
+async def test_assembly_remaps_assumption_id_conflicting_with_recommendation() -> None:
+    brief, classification = _brief_and_classification()
+    evidence_bundle, fact, evidence = _evidence_bundle()
+    narrative = cast(dict[str, Any], _narrative_response())
+    narrative["supplemental_claims"][1]["claim_id"] = "hyp-1"
+    narrative["supplemental_claims"][2]["claim_id"] = "hyp-original"
+    model = DeterministicModelProvider({"assemble_operations_report": narrative})
+    diagnosis = Diagnosis(
+        business_stage="冷启动阶段",
+        target_users="新注册家庭用户",
+        goal_relationships=[
+            GoalRelationship(
+                business_goal="提高有效订单规模",
+                operations_goal="提高新客首单转化",
+                target_behavior="完成首次下单",
+                metric_ids=["metric-outcome"],
+            )
+        ],
+        behavior_path=["注册", "浏览", "提交订单"],
+        core_problem="尚未区分信任不足与承接路径摩擦的影响。",
+        supporting_claim_ids=[fact.claim_id],
+        constraints=["预算待确认"],
+        priority_rationale="先做最小实验可以低成本区分关键解释。",
+    )
+    case = CaseMechanism(
+        case_id="case-1",
+        company="示例公司",
+        goal="承接新客首单",
+        audience="新注册用户",
+        touchpoints=["社群"],
+        mechanism="通过社群信任与提醒承接首次决策",
+        execution_conditions=["社群触达可归因"],
+        observed_outcomes=[fact],
+        evidence_ids=[evidence.evidence_id],
+        transferable_elements=["社群信任机制"],
+        non_transferable_elements=["头部平台自然流量"],
+    )
+    report = await build_operations_report(
+        report_id="report-conflict",
+        confirmed_baseline=ConfirmedBriefBaseline(
+            brief=brief,
+            classification=classification,
+            fingerprint_sha256="f" * 64,
+        ),
+        scene_classification=classification,
+        diagnosis=diagnosis,
+        evidence_bundle=evidence_bundle,
+        case_mechanisms=[case],
+        strategies=[_strategy()],
+        action_plan=_action_plan(),
+        measurement_plan=_measurement_plan(),
+        resource_budget_risk_summary=_resource_summary(),
+        model=model,
+        generated_at=datetime(2026, 9, 30, tzinfo=UTC),
+    )
+
+    remapped_id = report.strategies[0].assumption_claim_ids[0]
+    assert remapped_id.startswith("hyp_")
+    assert report.experiments[0].hypothesis_claim_id == remapped_id
+    assert any(claim.claim_id == "hyp-1" and claim.claim_type is ClaimType.RECOMMENDATION
+               for claim in report.key_claims)
+    assert remapped_id in {claim.claim_id for claim in report.assumptions}
+    assert any("重新编号" in item for item in report.limitations)

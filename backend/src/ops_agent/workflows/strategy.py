@@ -408,7 +408,7 @@ async def build_retention_strategy(
                     ),
                 ),
             ),
-            max_output_tokens=5_000,
+            max_output_tokens=8_000,
             temperature=0,
         ),
         RetentionStrategyPlan,
@@ -1257,6 +1257,8 @@ _RETENTION_SYSTEM_PROMPT = "\n".join(
         "留存指标必须明确 cohort 起点事件、回访事件、分群、观察窗口、公式和判断规则。",
         "激活问题不能只用消息召回解决；召回权益不能替代产品核心价值。",
         "如果没有可靠基线，只能输出待验证假设和最小实验，不得承诺确定留存、复购或召回提升。",
+        "每个 strategy_options 条目必须有非空 evidence_ids 或 assumption_claim_ids。",
+        "每个 strategy_options.impact_path 至少两步。",
         "策略只用于运营决策支持，不调用任何外部渠道执行投放。",
     )
 )
@@ -1268,6 +1270,8 @@ _CAMPAIGN_SYSTEM_PROMPT = "\n".join(
         "传播节奏必须覆盖预热、上线、持续、收尾和复盘，每阶段都要有负责人、交付物和验收方式。",
         "涉及权益、库存、流量峰值或客服压力时，必须提供触发阈值、监控指标和降级动作。",
         "如果没有可靠基线，只能输出待验证假设和增量验证方法，不得承诺确定成交、转化或活动增量。",
+        "每个 strategy_options 条目必须有非空 evidence_ids 或 assumption_claim_ids。",
+        "每个 strategy_options.impact_path 至少两步。",
         "策略只用于运营决策支持，不调用任何外部渠道执行投放。",
     )
 )
@@ -1300,6 +1304,8 @@ _MEASUREMENT_PLAN_SYSTEM_PROMPT = "\n".join(
         "必须同时设计结果指标、过程指标和风险指标，并写清口径、公式、数据来源、观测周期和判断规则。",
         "必须为核心策略提供实验计划，说明假设、关联策略、目标人群、设计、对照、周期、主要指标、样本方法、成功标准和停止条件。",
         "如果存在可靠基线，可以基于基线给出有依据的目标区间；没有基线时只能输出待验证区间或建立基线的实验。",
+        "每项 metric 的 baseline_value 与 baseline_source 必须同时存在或同时为 null。",
+        "无基线的 target 必须标记 is_hypothesis=true，basis 不得为 provided_baseline。",
         "不得把缺少依据的提升幅度表述为确定目标或效果承诺。",
     )
 )
@@ -1308,6 +1314,8 @@ _RESOURCE_BUDGET_RISK_SYSTEM_PROMPT = "\n".join(
     (
         "你是资源、预算与风险汇总模块，只输出结构化 ResourceBudgetRiskSummary。",
         "必须汇总人员角色、渠道、工具、内容产能、执行时间和预算六类资源，并绑定对应策略。",
+        "priority_order 必须恰好包含 requirements 中每个 requirement_id 一次，不得遗漏或重复。",
+        "每个 requirement.linked_strategy_ids 至少包含一个已有策略编号。",
         "用户提供预算上限时，必须按 MUST、SHOULD、COULD、WONT_NOW 排序，明确取舍和本期排除范围。",
         "用户未提供预算时，只能给出成本区间、测算公式或待确认项，不得生成伪精确金额。",
         "每项风险必须说明触发条件、缓解动作、负责人角色和可观测的风险指标。",

@@ -12,6 +12,7 @@ from ops_agent.providers import (
     SearchResult,
     build_production_providers,
 )
+from ops_agent.providers.openai_compatible import OpenAICompatibleModelProvider
 from pydantic import HttpUrl, SecretStr
 
 
@@ -50,9 +51,25 @@ def test_production_composition_uses_configured_adapters() -> None:
 
     providers = build_production_providers(settings)
 
-    assert type(providers.model).__name__ == "OpenAICompatibleModelProvider"
+    assert isinstance(providers.model, OpenAICompatibleModelProvider)
+    assert providers.model.structured_output_mode == "json_schema"
     assert type(providers.search).__name__ == "TavilySearchProvider"
     assert type(providers.fetcher).__name__ == "SecureHttpPageFetcher"
+
+
+def test_production_composition_accepts_json_object_mode() -> None:
+    settings = Settings(
+        model_structured_output_mode="json_object",
+        model_thinking_mode="disabled",
+        model_api_key=SecretStr("model-test-key"),
+        search_api_key=SecretStr("search-test-key"),
+    )
+
+    providers = build_production_providers(settings)
+
+    assert isinstance(providers.model, OpenAICompatibleModelProvider)
+    assert providers.model.structured_output_mode == "json_object"
+    assert providers.model.thinking_mode == "disabled"
 
 
 def test_production_composition_requires_external_credentials() -> None:

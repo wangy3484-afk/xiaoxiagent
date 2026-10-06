@@ -484,7 +484,7 @@ async def build_case_mechanisms(
                     ),
                 ),
             ),
-            max_output_tokens=4_000,
+            max_output_tokens=8_000,
             temperature=0,
         ),
         _CaseMechanismExtractionProposal,
@@ -1348,7 +1348,7 @@ async def _request_model_plan(
                     ),
                 ),
             ),
-            max_output_tokens=2_000,
+            max_output_tokens=4_000,
             temperature=0,
         ),
         _ResearchPlanProposal,
@@ -1632,6 +1632,7 @@ _CASE_EXTRACTION_PROMPT = "\n".join(
         "并提供逐字来自 original_page_text 的 supporting_quotes。",
         "如果只能形成方向性判断或摘要无法核验，将 claim_type 设为 hypothesis。",
         "案例机制要拆成目标、人群、触点、机制、激励、执行条件、可迁移与不可迁移部分。",
+        "选择最相关且来源独立的 2 至 4 个案例、4 至 8 条主张；字段内容保持简洁，避免输出截断。",
     )
 )
 

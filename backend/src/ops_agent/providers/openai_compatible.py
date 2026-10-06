@@ -1,9 +1,10 @@
 """OpenAI-compatible Chat Completions adapter with strict structured output."""
 
 import json
+import logging
 import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 from pydantic import BaseModel, SecretStr, ValidationError
@@ -21,6 +22,8 @@ from ops_agent.providers.errors import (
     ProviderTimeoutError,
 )
 
+LOGGER = logging.getLogger("ops_agent.providers.openai_compatible")
+
 
 class OpenAICompatibleModelProvider:
     """Call `/chat/completions` without leaking provider response formats upstream."""
@@ -35,6 +38,8 @@ class OpenAICompatibleModelProvider:
         model: str,
         timeout_seconds: float,
         schema_retries: int = 2,
+        structured_output_mode: Literal["json_schema", "json_object"] = "json_schema",
+        thinking_mode: Literal["provider_default", "enabled", "disabled"] = "provider_default",
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not 0 <= schema_retries <= 2:
@@ -44,6 +49,8 @@ class OpenAICompatibleModelProvider:
         self.model = model
         self.timeout = httpx.Timeout(timeout_seconds)
         self.schema_retries = schema_retries
+        self.structured_output_mode = structured_output_mode
+        self.thinking_mode = thinking_mode
         self.transport = transport
 
     async def generate_structured[OutputT: BaseModel](
@@ -53,9 +60,15 @@ class OpenAICompatibleModelProvider:
     ) -> StructuredModelResult[OutputT]:
         attempts = self.schema_retries + 1
         last_request_id: str | None = None
+        validation_feedback = ""
         for attempt in range(1, attempts + 1):
             response = await self._post(
-                self._request_payload(request, output_schema, is_retry=attempt > 1)
+                self._request_payload(
+                    request,
+                    output_schema,
+                    is_retry=attempt > 1,
+                    validation_feedback=validation_feedback,
+                )
             )
             last_request_id = response.headers.get("x-request-id")
             data = self._response_json(response, last_request_id)
@@ -63,7 +76,41 @@ class OpenAICompatibleModelProvider:
             try:
                 content = _assistant_content(data)
                 output = output_schema.model_validate(json.loads(content))
-            except (KeyError, TypeError, json.JSONDecodeError, ValidationError):
+            except (KeyError, TypeError, json.JSONDecodeError, ValidationError) as exc:
+                choices = data.get("choices")
+                first_choice = choices[0] if isinstance(choices, list) and choices else {}
+                finish_reason = (
+                    first_choice.get("finish_reason")
+                    if isinstance(first_choice, Mapping)
+                    else None
+                )
+                message = (
+                    first_choice.get("message")
+                    if isinstance(first_choice, Mapping)
+                    else None
+                )
+                content_raw = message.get("content") if isinstance(message, Mapping) else None
+                LOGGER.warning(
+                    json.dumps(
+                        {
+                            "event": "model_schema_attempt_failed",
+                            "schema": output_schema.__name__,
+                            "attempt": attempt,
+                            "finish_reason": finish_reason,
+                            "content_chars": (
+                                len(content_raw) if isinstance(content_raw, str) else None
+                            ),
+                            "error_type": type(exc).__name__,
+                            "validation_locations": (
+                                [list(item["loc"]) for item in exc.errors()[:8]]
+                                if isinstance(exc, ValidationError)
+                                else []
+                            ),
+                        },
+                        ensure_ascii=False,
+                    )
+                )
+                validation_feedback = _schema_feedback(exc, finish_reason)
                 if attempt == attempts:
                     raise ProviderSchemaError(
                         "model output did not match the requested schema",
@@ -143,32 +190,54 @@ class OpenAICompatibleModelProvider:
         output_schema: type[OutputT],
         *,
         is_retry: bool,
+        validation_feedback: str,
     ) -> dict[str, Any]:
         messages = [message.model_dump(mode="json") for message in request.messages]
+        if self.structured_output_mode == "json_object":
+            messages.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": (
+                        "Return only one JSON object matching this JSON Schema. "
+                        "Be concise; do not add markdown or explanatory text. JSON Schema: "
+                        + json.dumps(output_schema.model_json_schema(), ensure_ascii=False)
+                    ),
+                },
+            )
         if is_retry:
             messages.append(
                 {
                     "role": "system",
                     "content": (
-                        "The previous output failed schema validation. "
-                        "Return one corrected JSON object matching the schema."
+                        "The previous output failed schema validation or was truncated. "
+                        f"Validation feedback: {validation_feedback} "
+                        "Return one concise, corrected JSON object matching the schema."
                     ),
                 }
             )
-        return {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": request.max_output_tokens,
-            "temperature": request.temperature,
-            "response_format": {
+        response_format: dict[str, Any] = (
+            {"type": "json_object"}
+            if self.structured_output_mode == "json_object"
+            else {
                 "type": "json_schema",
                 "json_schema": {
                     "name": _schema_name(output_schema.__name__),
                     "strict": True,
                     "schema": output_schema.model_json_schema(),
                 },
-            },
+            }
+        )
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": request.max_output_tokens,
+            "temperature": request.temperature,
+            "response_format": response_format,
         }
+        if self.thinking_mode != "provider_default":
+            payload["thinking"] = {"type": self.thinking_mode}
+        return payload
 
     def _response_json(
         self, response: httpx.Response, request_id: str | None
@@ -219,3 +288,18 @@ def _optional_string(value: object) -> str | None:
 
 def _safe_nonnegative_int(value: object) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def _schema_feedback(exc: Exception, finish_reason: object) -> str:
+    if finish_reason == "length":
+        return "Output was truncated; shorten string values and optional lists."
+    if isinstance(exc, ValidationError):
+        issues = [
+            f"{'.'.join(str(part) for part in issue['loc']) or 'root'}: "
+            f"{str(issue['msg'])[:160]}"
+            for issue in exc.errors(include_input=False, include_context=False)[:8]
+        ]
+        return "; ".join(issues)[:1_200]
+    if isinstance(exc, json.JSONDecodeError):
+        return "Response was not valid JSON."
+    return "Response was missing required assistant JSON content."

@@ -16,6 +16,18 @@ def test_development_defaults_are_usable() -> None:
     assert settings.temporary_artifact_retention_days == 7
     assert settings.artifact_storage_path.name == "artifacts"
     assert settings.checkpoint_schema == "langgraph_checkpoint"
+    assert settings.model_structured_output_mode == "json_schema"
+    assert settings.model_thinking_mode == "provider_default"
+
+
+def test_invalid_model_structured_output_mode_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"model_structured_output_mode": "unsupported"})
+
+
+def test_invalid_model_thinking_mode_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"model_thinking_mode": "unsupported"})
 
 
 def test_production_requires_credentials_and_secure_cookie() -> None:

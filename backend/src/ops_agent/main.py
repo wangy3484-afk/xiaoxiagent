@@ -69,6 +69,8 @@ def create_app(
             model=active_settings.model_name,
             timeout_seconds=active_settings.model_timeout_seconds,
             schema_retries=active_settings.model_max_retries,
+            structured_output_mode=active_settings.model_structured_output_mode,
+            thinking_mode=active_settings.model_thinking_mode,
         )
     application.state.model_provider = model_provider
     application.state.job_queue = job_queue or CeleryJobQueue(celery_app)

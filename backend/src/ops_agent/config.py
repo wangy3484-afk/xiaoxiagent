@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     model_api_key: SecretStr | None = None
     model_timeout_seconds: float = Field(default=90.0, gt=0, le=600)
     model_max_retries: int = Field(default=2, ge=0, le=2)
+    model_structured_output_mode: Literal["json_schema", "json_object"] = "json_schema"
+    model_thinking_mode: Literal["provider_default", "enabled", "disabled"] = (
+        "provider_default"
+    )
     model_input_cost_per_million_tokens: float = Field(default=0.0, ge=0)
     model_output_cost_per_million_tokens: float = Field(default=0.0, ge=0)
 

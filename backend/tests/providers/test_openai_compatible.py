@@ -1,6 +1,7 @@
 """Mock-server tests for the OpenAI-compatible structured model adapter."""
 
 import json
+from typing import Literal
 
 import httpx
 import pytest
@@ -32,6 +33,8 @@ def _provider(
     handler: httpx.MockTransport,
     *,
     schema_retries: int = 2,
+    structured_output_mode: Literal["json_schema", "json_object"] = "json_schema",
+    thinking_mode: Literal["provider_default", "enabled", "disabled"] = "provider_default",
     api_key: str = "test-model-secret",
 ) -> OpenAICompatibleModelProvider:
     return OpenAICompatibleModelProvider(
@@ -40,6 +43,8 @@ def _provider(
         model="example-model",
         timeout_seconds=3,
         schema_retries=schema_retries,
+        structured_output_mode=structured_output_mode,
+        thinking_mode=thinking_mode,
         transport=handler,
     )
 
@@ -89,12 +94,55 @@ async def test_structured_success_records_schema_usage_and_request_id() -> None:
 
 
 @pytest.mark.asyncio
+async def test_json_object_mode_sends_schema_instruction_and_validates_result() -> None:
+    captured: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return _chat_response('{"primary_scene":"retention","rationale":"目标是留存"}')
+
+    provider = _provider(
+        httpx.MockTransport(handler), structured_output_mode="json_object"
+    )
+    result = await provider.generate_structured(_request(), SceneOutput)
+
+    assert result.output.primary_scene == "retention"
+    assert captured[0]["response_format"] == {"type": "json_object"}
+    messages = captured[0]["messages"]
+    assert isinstance(messages, list)
+    assert messages[0]["role"] == "system"
+    assert "JSON Schema" in messages[0]["content"]
+    assert "primary_scene" in messages[0]["content"]
+    assert messages[1]["content"] == "希望提高新用户次日留存"
+
+
+@pytest.mark.asyncio
+async def test_explicit_thinking_mode_is_only_sent_when_configured() -> None:
+    captured: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return _chat_response('{"primary_scene":"retention","rationale":"留存目标"}')
+
+    provider = _provider(
+        httpx.MockTransport(handler),
+        structured_output_mode="json_object",
+        thinking_mode="disabled",
+    )
+    await provider.generate_structured(_request(), SceneOutput)
+
+    assert captured[0]["thinking"] == {"type": "disabled"}
+
+
+@pytest.mark.asyncio
 async def test_schema_validation_retries_at_most_twice_then_succeeds() -> None:
     calls = 0
+    captured: list[dict[str, object]] = []
 
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
+        captured.append(json.loads(request.content))
         if calls < 3:
             return _chat_response('{"primary_scene":"retention"}')
         return _chat_response(
@@ -106,6 +154,9 @@ async def test_schema_validation_retries_at_most_twice_then_succeeds() -> None:
 
     assert result.output.primary_scene == "retention"
     assert calls == 3
+    retry_messages = captured[1]["messages"]
+    assert isinstance(retry_messages, list)
+    assert "rationale" in retry_messages[-1]["content"]
 
 
 @pytest.mark.asyncio
